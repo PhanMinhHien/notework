@@ -249,14 +249,11 @@
                 if (cmpId !== 0) return cmpId;
                 return a.tickets - b.tickets;
             });
-
             const mainTable = document.querySelector('#mainTable tbody');
             mainTable.innerHTML = '';
-
             mainData.forEach((item, index) => {
                 const canEditTime = assetTypesRequireHours.includes(item.assetType);
                 const hoursDisplay = typeof item.hours === 'string' ? item.hours : '-';
-
                 const row = document.createElement('tr');
                 row.innerHTML = `
         <td>${item.assetId}</td>
@@ -274,17 +271,12 @@
     `;
                 mainTable.appendChild(row);
             });
-
-
             const loggedTable = document.querySelector('#loggedTable tbody');
             loggedTable.innerHTML = '';
-
             const groupedLoggedData = {};
-
             loggedData.forEach((item, index) => {
                 const assetType = item.assetType;
                 if (assetTypesRequireHours.includes(assetType)) {
-
                     const row = document.createElement('tr');
                     row.innerHTML = `
                 <td>${item.assetId}</td>
@@ -292,11 +284,9 @@
                 <td>${item.tickets}</td>
                 <td id="hours-cell-${index}">${typeof item.hours === 'string' ? item.hours : '-'}</td>
                 <td>
-                    
                     <button class="btn delete-btn" onclick="deleteLogged(${index})">Delete</button>
                 </td>
             `;
-
                     loggedTable.appendChild(row);
                 } else {
                     if (!groupedLoggedData[assetType]) {
@@ -313,7 +303,6 @@
                     groupedLoggedData[assetType].assetIds.push(item.assetId);
                 }
             });
-
             Object.values(groupedLoggedData).forEach((group) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -326,7 +315,6 @@
                 loggedTable.appendChild(row);
             });
         }
-
         function deleteLoggedGroup(indexes) {
             if (!Array.isArray(indexes)) return;
             if (confirm("Are you sure you want to delete all entries in this group?")) {
@@ -340,7 +328,6 @@
         function editMainTime(index) {
             const hoursCell = document.getElementById(`main-hours-cell-${index}`);
             const currentHours = mainData[index].hours || '';
-
             hoursCell.innerHTML = `
         <input type="text" id="edit-main-hours-input-${index}" value="${currentHours}" style="width: 60px;">
         <button class="btn" onclick="saveMainTime(${index})">Save</button>
@@ -350,28 +337,19 @@
         function saveMainTime(index) {
             const input = document.getElementById(`edit-main-hours-input-${index}`);
             if (!input) return;
-
             const newHours = input.value.trim();
-
-
             const floatHours = parseHMtoFloat(newHours);
-
             if (newHours === '' || isNaN(floatHours) || floatHours < 0) {
                 alert("Please enter a valid non-negative number for hours (format h:mm).");
                 return;
             }
-
-
             mainData[index].hours = newHours;
-
             saveData();
             renderTables();
         }
-
         function editTime(index) {
             const hoursCell = document.getElementById(`hours-cell-${index}`);
             const currentHours = loggedData[index].hours || '';
-
             hoursCell.innerHTML = `
         <input type="text" id="edit-hours-input-${index}" value="${currentHours}" style="width: 60px;">
         <button class="btn" onclick="saveTime(${index})">Save</button>
@@ -381,22 +359,16 @@
         function saveTime(index) {
             const input = document.getElementById(`edit-hours-input-${index}`);
             if (!input) return;
-
             const newHours = input.value.trim();
-
             const floatHours = parseHMtoFloat(newHours);
-
             if (newHours === '' || isNaN(floatHours) || floatHours < 0) {
                 alert("Please enter a valid non-negative number for hours (format h:mm).");
                 return;
             }
-
             loggedData[index].hours = newHours;
-
             saveData();
             renderTables();
         }
-
         function formatHoursToHM(hours) {
             if (hours == null || isNaN(hours)) return '-';
             const h = Math.floor(hours);
@@ -509,18 +481,23 @@
             document.getElementById('popupOverlay').style.display = 'flex';
         }
         function formatInputHours(val) {
-
             const regex = /^(\d{1,2}):([0-5]\d)$/;
             const match = val.match(regex);
-            if (!match) return null;
-
-            const h = parseInt(match[1], 10);
-            const m = parseInt(match[2], 10);
-            if (m >= 60) return null;
-
-            return `${h}:${m.toString().padStart(2, '0')}`;
+            if (match) {
+                const h = parseInt(match[1], 10);
+                const m = parseInt(match[2], 10);
+                if (m >= 60) return null;
+                return `${h}:${m.toString().padStart(2, '0')}`;
+            }
+            const decimal = parseFloat(val);
+            if (!isNaN(decimal) && decimal >= 0) {
+                const h = Math.floor(decimal);
+                const m = Math.round((decimal - h) * 60);
+                if (m >= 60) return null;
+                return `${h}:${m.toString().padStart(2, '0')}`;
+            }
+            return null;
         }
-
         function parseHMtoFloat(hmStr) {
             const [h, m] = hmStr.split(':').map(Number);
             return h + (m / 60);
@@ -651,7 +628,6 @@
             const m = Math.round((decimalHours - h) * 60);
             return `${h}:${m.toString().padStart(2, '0')}`;
         }
-
         function renderWorkTimeByDay() {
             const container = document.getElementById('workTimeByDay');
             container.innerHTML = '';
@@ -689,7 +665,6 @@
       <td>${w.timeIn || '-'}</td>
       <td>${w.timeOut || '-'}</td>
      <td>${decimalHoursToHM(w.duration)}</td>
-
       <td>
         ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : ''}
         <button class="btn delete-btn" onclick="deleteWorkTimeByDay(${i}, ${idx})">Delete</button>
@@ -817,7 +792,6 @@
                 alert("All work time data has been deleted.");
             }
         }
-
     </script>
 </body>
 
