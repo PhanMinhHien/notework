@@ -253,25 +253,28 @@
             const mainTable = document.querySelector('#mainTable tbody');
             mainTable.innerHTML = '';
 
-            mainData.forEach((item, index) => {
-                const canEditTime = assetTypesRequireHours.includes(item.assetType);
-                const hoursDisplay = typeof item.hours === 'string' ? item.hours : '-';
+           mainData.forEach((item, index) => {
+            const canEditTime = assetTypesRequireHours.includes(item.assetType);
+            const hoursDisplay = typeof item.hours === 'string' ? item.hours : '-';
+        
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.assetId}</td>
+                <td>${item.assetType}</td>
+                <td>${item.tickets}</td>
+                <td id="main-hours-cell-${index}">${hoursDisplay}</td>
+                <td>
+                    ${canEditTime
+                        ? `<button class="btn" onclick="editMainTime(${index})">Edit Time</button>`
+                        : `<button class="btn" style="background:#f39c12;color:#fff;" onclick="openEdit(${index})">Edit</button>`
+                    }
+                    <button class="btn" style="background:#27ae60;color:#fff;" onclick="moveTicket(${index})">Log</button>
+                    <button class="btn delete-btn" onclick="deleteMain(${index})">Delete</button>
+                </td>
+            `;
+            mainTable.appendChild(row);
+        });
 
-                const row = document.createElement('tr');
-                row.innerHTML = `
-            <td>${item.assetId}</td>
-            <td>${item.assetType}</td>
-            <td>${item.tickets}</td>
-            <td id="main-hours-cell-${index}">${hoursDisplay}</td>
-            <td>
-                <button class="btn" style="background:#f39c12;color:#fff;" onclick="openEdit(${index})">Edit</button>
-                <button class="btn" style="background:#27ae60;color:#fff;" onclick="moveTicket(${index})">Log</button>
-                ${canEditTime ? `<button class="btn" onclick="editMainTime(${index})">Edit Time</button>` : ''}
-                <button class="btn delete-btn" onclick="deleteMain(${index})">Delete</button>
-            </td>
-        `;
-                mainTable.appendChild(row);
-            });
 
             const loggedTable = document.querySelector('#loggedTable tbody');
             loggedTable.innerHTML = '';
