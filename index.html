@@ -168,7 +168,7 @@
             <option>TODAY Newsletter</option>
         </select>
         <input type="number" id="ticketCount" placeholder="Amount of Assets" />
-        <input type="number" id="hours" placeholder="Working Hours" style="display:none;" />
+        <input type="text" id="hours" placeholder="Working Hours" style="display:none;" />
         <button onclick="addTicket()" style="background:#f39c12;color:#fff;">Add</button>
     </div>
     <table id="mainTable">
@@ -253,27 +253,27 @@
             const mainTable = document.querySelector('#mainTable tbody');
             mainTable.innerHTML = '';
 
-           mainData.forEach((item, index) => {
-            const canEditTime = assetTypesRequireHours.includes(item.assetType);
-            const hoursDisplay = typeof item.hours === 'string' ? item.hours : '-';
-        
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${item.assetId}</td>
-                <td>${item.assetType}</td>
-                <td>${item.tickets}</td>
-                <td id="main-hours-cell-${index}">${hoursDisplay}</td>
-                <td>
-                    ${canEditTime
+            mainData.forEach((item, index) => {
+                const canEditTime = assetTypesRequireHours.includes(item.assetType);
+                const hoursDisplay = typeof item.hours === 'string' ? item.hours : '-';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+        <td>${item.assetId}</td>
+        <td>${item.assetType}</td>
+        <td>${item.tickets}</td>
+        <td id="main-hours-cell-${index}">${hoursDisplay}</td>
+        <td>
+            ${canEditTime
                         ? `<button class="btn" onclick="editMainTime(${index})">Edit Time</button>`
                         : `<button class="btn" style="background:#f39c12;color:#fff;" onclick="openEdit(${index})">Edit</button>`
                     }
-                    <button class="btn" style="background:#27ae60;color:#fff;" onclick="moveTicket(${index})">Log</button>
-                    <button class="btn delete-btn" onclick="deleteMain(${index})">Delete</button>
-                </td>
-            `;
-            mainTable.appendChild(row);
-        });
+            <button class="btn" style="background:#27ae60;color:#fff;" onclick="moveTicket(${index})">Log</button>
+            <button class="btn delete-btn" onclick="deleteMain(${index})">Delete</button>
+        </td>
+    `;
+                mainTable.appendChild(row);
+            });
 
 
             const loggedTable = document.querySelector('#loggedTable tbody');
@@ -284,7 +284,7 @@
             loggedData.forEach((item, index) => {
                 const assetType = item.assetType;
                 if (assetTypesRequireHours.includes(assetType)) {
-                    // Item có thể sửa giờ -> thêm nút Edit Time
+
                     const row = document.createElement('tr');
                     row.innerHTML = `
                 <td>${item.assetId}</td>
@@ -296,7 +296,7 @@
                     <button class="btn delete-btn" onclick="deleteLogged(${index})">Delete</button>
                 </td>
             `;
-                    // <button class="btn" onclick="editTime(${index})">Edit Time</button>
+
                     loggedTable.appendChild(row);
                 } else {
                     if (!groupedLoggedData[assetType]) {
@@ -353,7 +353,7 @@
 
             const newHours = input.value.trim();
 
-            // Sử dụng parseHMtoFloat để chuyển "h:mm" thành số float
+
             const floatHours = parseHMtoFloat(newHours);
 
             if (newHours === '' || isNaN(floatHours) || floatHours < 0) {
@@ -361,11 +361,11 @@
                 return;
             }
 
-            // Lưu chuỗi giờ định dạng "h:mm"
+
             mainData[index].hours = newHours;
 
-            saveData();  // Hàm lưu dữ liệu của bạn
-            renderTables();  // Cập nhật lại bảng
+            saveData();
+            renderTables();
         }
 
         function editTime(index) {
@@ -383,18 +383,18 @@
             if (!input) return;
 
             const newHours = input.value.trim();
-            // Sử dụng parseHMtoFloat để chuyển "h:mm" thành số float
+
             const floatHours = parseHMtoFloat(newHours);
-            // Kiểm tra định dạng giờ (bạn có thể tùy chỉnh kiểm tra theo hàm formatInputHours nếu có)
+
             if (newHours === '' || isNaN(floatHours) || floatHours < 0) {
                 alert("Please enter a valid non-negative number for hours (format h:mm).");
                 return;
             }
 
             loggedData[index].hours = newHours;
-            // loggedData[index].hours = newHours;
-            saveData();  // Hàm lưu dữ liệu của bạn
-            renderTables();  // Cập nhật bảng
+
+            saveData();
+            renderTables();
         }
 
         function formatHoursToHM(hours) {
@@ -442,7 +442,7 @@
         function addTicket() {
             const rawAssetIds = document.getElementById('assetId').value.trim();
             const assetType = document.getElementById('assetType').value;
-            const hoursInput = document.getElementById('hours').value;
+            const hoursInput = document.getElementById('hours').value.trim();
             const hours = hoursInput ? formatInputHours(hoursInput) : null;
             const assetIdParts = rawAssetIds.split(/[\s,]+/).filter(Boolean);
             if (!assetIdParts.length || !assetType) {
@@ -466,8 +466,8 @@
                 assetEntries.push({ id, tickets });
                 totalTickets += tickets;
             }
-            if (assetTypesRequireHours.includes(assetType) && (hours === null || hours < 0)) {
-                alert("Please enter a valid number of hours for 'Web content editing'.");
+            if (assetTypesRequireHours.includes(assetType) && (hours === null)) {
+                alert("Please enter a valid time in HH:MM format for 'Web content editing'.");
                 return;
             }
             mainData.push({
@@ -509,12 +509,18 @@
             document.getElementById('popupOverlay').style.display = 'flex';
         }
         function formatInputHours(val) {
-            const num = parseFloat(val);
-            if (isNaN(num)) return null;
-            const h = Math.floor(num);
-            const m = Math.round((num - h) * 60);
+
+            const regex = /^(\d{1,2}):([0-5]\d)$/;
+            const match = val.match(regex);
+            if (!match) return null;
+
+            const h = parseInt(match[1], 10);
+            const m = parseInt(match[2], 10);
+            if (m >= 60) return null;
+
             return `${h}:${m.toString().padStart(2, '0')}`;
         }
+
         function parseHMtoFloat(hmStr) {
             const [h, m] = hmStr.split(':').map(Number);
             return h + (m / 60);
@@ -640,6 +646,12 @@
             document.getElementById('timeIn').value = '';
             document.getElementById('timeOut').value = '';
         }
+        function decimalHoursToHM(decimalHours) {
+            const h = Math.floor(decimalHours);
+            const m = Math.round((decimalHours - h) * 60);
+            return `${h}:${m.toString().padStart(2, '0')}`;
+        }
+
         function renderWorkTimeByDay() {
             const container = document.getElementById('workTimeByDay');
             container.innerHTML = '';
@@ -654,7 +666,7 @@
                 const total = grouped[i].reduce((sum, w) => sum + w.duration, 0);
                 const dayBlock = document.createElement('div');
                 dayBlock.style.marginBottom = '20px';
-                dayBlock.innerHTML = `<h3>${dayName} - Total: ${total.toFixed(2)} hours</h3>`;
+                dayBlock.innerHTML = `<h3>${dayName} - Total: ${decimalHoursToHM(total)} hours</h3>`;
                 const table = document.createElement('table');
                 table.style.width = '100%';
                 table.style.borderCollapse = 'collapse';
@@ -676,7 +688,8 @@
       <td>${w.date}</td>
       <td>${w.timeIn || '-'}</td>
       <td>${w.timeOut || '-'}</td>
-      <td>${w.duration.toFixed(2)}</td>
+     <td>${decimalHoursToHM(w.duration)}</td>
+
       <td>
         ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : ''}
         <button class="btn delete-btn" onclick="deleteWorkTimeByDay(${i}, ${idx})">Delete</button>
