@@ -334,6 +334,9 @@
         <button class="btn" onclick="renderTables()">Cancel</button>
     `;
         }
+         document.getElementById('ticketCount').addEventListener('input', function (e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
         function saveMainTime(index) {
             const input = document.getElementById(`edit-main-hours-input-${index}`);
             if (!input) return;
