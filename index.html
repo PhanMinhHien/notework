@@ -249,37 +249,51 @@
                 if (cmpId !== 0) return cmpId;
                 return a.tickets - b.tickets;
             });
+
             const mainTable = document.querySelector('#mainTable tbody');
             mainTable.innerHTML = '';
+
             mainData.forEach((item, index) => {
+                const canEditTime = assetTypesRequireHours.includes(item.assetType);
+                const hoursDisplay = typeof item.hours === 'string' ? item.hours : '-';
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
             <td>${item.assetId}</td>
             <td>${item.assetType}</td>
             <td>${item.tickets}</td>
-            <td>${typeof item.hours === 'string' ? item.hours : '-'}</td>
+            <td id="main-hours-cell-${index}">${hoursDisplay}</td>
             <td>
                 <button class="btn" style="background:#f39c12;color:#fff;" onclick="openEdit(${index})">Edit</button>
                 <button class="btn" style="background:#27ae60;color:#fff;" onclick="moveTicket(${index})">Log</button>
+                ${canEditTime ? `<button class="btn" onclick="editMainTime(${index})">Edit Time</button>` : ''}
                 <button class="btn delete-btn" onclick="deleteMain(${index})">Delete</button>
             </td>
         `;
                 mainTable.appendChild(row);
             });
+
             const loggedTable = document.querySelector('#loggedTable tbody');
             loggedTable.innerHTML = '';
+
             const groupedLoggedData = {};
-            loggedData.forEach((item) => {
+
+            loggedData.forEach((item, index) => {
                 const assetType = item.assetType;
                 if (assetTypesRequireHours.includes(assetType)) {
+                    // Item có thể sửa giờ -> thêm nút Edit Time
                     const row = document.createElement('tr');
                     row.innerHTML = `
                 <td>${item.assetId}</td>
                 <td>${item.assetType}</td>
                 <td>${item.tickets}</td>
-                <td>${typeof item.hours === 'string' ? item.hours : '-'}</td>
-                <td><button class="btn delete-btn" onclick="deleteLogged(${loggedData.indexOf(item)})">Delete</button></td>
+                <td id="hours-cell-${index}">${typeof item.hours === 'string' ? item.hours : '-'}</td>
+                <td>
+                    
+                    <button class="btn delete-btn" onclick="deleteLogged(${index})">Delete</button>
+                </td>
             `;
+                    // <button class="btn" onclick="editTime(${index})">Edit Time</button>
                     loggedTable.appendChild(row);
                 } else {
                     if (!groupedLoggedData[assetType]) {
@@ -291,23 +305,25 @@
                             originalIndexes: []
                         };
                     }
-                    groupedLoggedData[assetType].originalIndexes.push(loggedData.indexOf(item));
+                    groupedLoggedData[assetType].originalIndexes.push(index);
                     groupedLoggedData[assetType].tickets += item.tickets;
                     groupedLoggedData[assetType].assetIds.push(item.assetId);
                 }
             });
+
             Object.values(groupedLoggedData).forEach((group) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-        <td>${group.assetIds.join(', ')}</td>
-        <td>${group.assetType}</td>
-        <td>${group.tickets}</td>
-        <td>${typeof group.hours === 'string' ? group.hours : '-'}</td>
-        <td><button class="btn delete-btn" onclick="deleteLoggedGroup(${JSON.stringify(group.originalIndexes)})">Delete</button></td>
-    `;
+            <td>${group.assetIds.join(', ')}</td>
+            <td>${group.assetType}</td>
+            <td>${group.tickets}</td>
+            <td>${typeof group.hours === 'string' ? group.hours : '-'}</td>
+            <td><button class="btn delete-btn" onclick="deleteLoggedGroup(${JSON.stringify(group.originalIndexes)})">Delete</button></td>
+        `;
                 loggedTable.appendChild(row);
             });
         }
+
         function deleteLoggedGroup(indexes) {
             if (!Array.isArray(indexes)) return;
             if (confirm("Are you sure you want to delete all entries in this group?")) {
@@ -318,6 +334,66 @@
                 renderTables();
             }
         }
+        function editMainTime(index) {
+            const hoursCell = document.getElementById(`main-hours-cell-${index}`);
+            const currentHours = mainData[index].hours || '';
+
+            hoursCell.innerHTML = `
+        <input type="text" id="edit-main-hours-input-${index}" value="${currentHours}" style="width: 60px;">
+        <button class="btn" onclick="saveMainTime(${index})">Save</button>
+        <button class="btn" onclick="renderTables()">Cancel</button>
+    `;
+        }
+        function saveMainTime(index) {
+            const input = document.getElementById(`edit-main-hours-input-${index}`);
+            if (!input) return;
+
+            const newHours = input.value.trim();
+
+            // Sử dụng parseHMtoFloat để chuyển "h:mm" thành số float
+            const floatHours = parseHMtoFloat(newHours);
+
+            if (newHours === '' || isNaN(floatHours) || floatHours < 0) {
+                alert("Please enter a valid non-negative number for hours (format h:mm).");
+                return;
+            }
+
+            // Lưu chuỗi giờ định dạng "h:mm"
+            mainData[index].hours = newHours;
+
+            saveData();  // Hàm lưu dữ liệu của bạn
+            renderTables();  // Cập nhật lại bảng
+        }
+
+        function editTime(index) {
+            const hoursCell = document.getElementById(`hours-cell-${index}`);
+            const currentHours = loggedData[index].hours || '';
+
+            hoursCell.innerHTML = `
+        <input type="text" id="edit-hours-input-${index}" value="${currentHours}" style="width: 60px;">
+        <button class="btn" onclick="saveTime(${index})">Save</button>
+        <button class="btn" onclick="renderTables()">Cancel</button>
+    `;
+        }
+        function saveTime(index) {
+            const input = document.getElementById(`edit-hours-input-${index}`);
+            if (!input) return;
+
+            const newHours = input.value.trim();
+            // Sử dụng parseHMtoFloat để chuyển "h:mm" thành số float
+            const floatHours = parseHMtoFloat(newHours);
+            // Kiểm tra định dạng giờ (bạn có thể tùy chỉnh kiểm tra theo hàm formatInputHours nếu có)
+            if (newHours === '' || isNaN(floatHours) || floatHours < 0) {
+                alert("Please enter a valid non-negative number for hours (format h:mm).");
+                return;
+            }
+
+            loggedData[index].hours = newHours;
+            // loggedData[index].hours = newHours;
+            saveData();  // Hàm lưu dữ liệu của bạn
+            renderTables();  // Cập nhật bảng
+        }
+
         function formatHoursToHM(hours) {
             if (hours == null || isNaN(hours)) return '-';
             const h = Math.floor(hours);
@@ -710,21 +786,22 @@
             reader.readAsText(file);
         }
         function resetLoggedTable() {
-            if (confirm("Bạn có chắc muốn xoá toàn bộ dữ liệu trong Timesheet?")) {
+            if (confirm("Are you sure you want to delete all data in the Timesheet?")) {
                 loggedData = [];
                 saveData();
                 renderTables();
-                alert("Đã xoá tất cả dữ liệu trong Timesheet.");
+                alert("All data in the Timesheet has been deleted.");
             }
         }
         function resetWorkTimes() {
-            if (confirm("Bạn có chắc muốn xoá toàn bộ dữ liệu giờ vào/ra công ty?")) {
+            if (confirm("Are you sure you want to delete all check-in/out times?")) {
                 workTimes = [];
                 saveData();
                 renderWorkTimeByDay();
-                alert("Đã xoá tất cả dữ liệu giờ làm việc.");
+                alert("All work time data has been deleted.");
             }
         }
+
     </script>
 </body>
 
