@@ -184,13 +184,19 @@
         <tbody></tbody>
     </table>
     <h2>Timesheet</h2>
+    <select id="weekSelector" onchange="filterByWeek()">
+        <option value="">-- Tất cả tuần --</option>
+        <!-- Các tuần sẽ được thêm bằng JS -->
+    </select>
     <table id="loggedTable">
         <thead>
             <tr>
                 <th>Asset ID</th>
                 <th>Asset Type</th>
-                <th>Amount of Assets</th>
+                <th>Tickets</th>
                 <th>Hours</th>
+                <!-- <th>Date</th> -->
+                <th>Week</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -241,6 +247,52 @@
             localStorage.setItem('loggedData', JSON.stringify(loggedData));
             localStorage.setItem('workTimes', JSON.stringify(workTimes));
         }
+        function addTicket() {
+            const rawAssetIds = document.getElementById('assetId').value.trim();
+            const assetType = document.getElementById('assetType').value;
+            const hoursInput = document.getElementById('hours').value.trim();
+            const hours = hoursInput ? formatInputHours(hoursInput) : null;
+            const assetIdParts = rawAssetIds.split(/[\s,]+/).filter(Boolean);
+            if (!assetIdParts.length || !assetType) {
+                alert("Please enter valid Asset ID(s) and Asset Type.");
+                return;
+            }
+            const assetEntries = [];
+            let totalTickets = 0;
+            for (const part of assetIdParts) {
+                const match = part.match(/^(\d+)(?:\((\d+)\))?$/);
+                if (!match) {
+                    alert(`Invalid asset ID format: ${part}`);
+                    return;
+                }
+                const id = match[1];
+                const tickets = match[2] ? parseInt(match[2], 10) : 1;
+                if (tickets <= 0) {
+                    alert(`Ticket count must be positive for asset ID: ${id}`);
+                    return;
+                }
+                assetEntries.push({ id, tickets });
+                totalTickets += tickets;
+            }
+            if (assetTypesRequireHours.includes(assetType) && (hours === null)) {
+                alert("Please enter a valid time in HH:MM format for 'Web content editing'.");
+                return;
+            }
+            mainData.push({
+                assetIds: assetEntries.map(e => e.id),
+                assetId: assetEntries.map(e => e.id + (e.tickets > 1 ? `(${e.tickets})` : '')).join(', '),
+                assetType,
+                tickets: totalTickets,
+                hours
+            });
+            saveData();
+            renderTables();
+            document.getElementById('assetId').value = '';
+            document.getElementById('assetType').value = '';
+            document.getElementById('ticketCount').value = '';
+            document.getElementById('hours').value = '';
+            toggleHourInput();
+        }
         function renderTables() {
             mainData.sort((a, b) => {
                 const cmpType = a.assetType.localeCompare(b.assetType);
@@ -256,25 +308,56 @@
                 const hoursDisplay = typeof item.hours === 'string' ? item.hours : '-';
                 const row = document.createElement('tr');
                 row.innerHTML = `
-        <td>${item.assetId}</td>
-        <td>${item.assetType}</td>
-        <td>${item.tickets}</td>
-        <td id="main-hours-cell-${index}">${hoursDisplay}</td>
-        <td>
-            ${canEditTime
+            <td>${item.assetId}</td>
+            <td>${item.assetType}</td>
+            <td>${item.tickets}</td>
+            <td id="main-hours-cell-${index}">${hoursDisplay}</td>
+            <td>
+                ${canEditTime
                         ? `<button class="btn" onclick="editMainTime(${index})">Edit Time</button>`
                         : `<button class="btn" style="background:#f39c12;color:#fff;" onclick="openEdit(${index})">Edit</button>`
                     }
-            <button class="btn" style="background:#27ae60;color:#fff;" onclick="moveTicket(${index})">Log</button>
-            <button class="btn delete-btn" onclick="deleteMain(${index})">Delete</button>
-        </td>
-    `;
+                <button class="btn" style="background:#27ae60;color:#fff;" onclick="moveTicket(${index})">Log</button>
+                <button class="btn delete-btn" onclick="deleteMain(${index})">Delete</button>
+            </td>
+        `;
                 mainTable.appendChild(row);
             });
+            const selector = document.getElementById('weekSelector');
+            if (selector) {
+                const currentSelection = selectedWeek || '';
+                selector.innerHTML = '<option value="">-- Tất cả tuần --</option>';
+                const weeksSet = new Set();
+                loggedData.forEach(item => {
+                    if (item.week) weeksSet.add(item.week);
+                });
+                const today = new Date();
+                const oneJan = new Date(today.getFullYear(), 0, 1);
+                const numberOfDays = Math.floor((today - oneJan) / 86400000);
+                const currentWeekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
+                const currentWeek = `Week ${currentWeekNumber}`;
+                weeksSet.add(currentWeek);
+                const weeksArray = Array.from(weeksSet).sort((a, b) => {
+                    const weekA = parseInt(a.split(' ')[1]);
+                    const weekB = parseInt(b.split(' ')[1]);
+                    return weekA - weekB;
+                });
+                weeksArray.forEach(week => {
+                    const option = document.createElement('option');
+                    option.value = week;
+                    option.textContent = week;
+                    if (week === currentSelection || (!currentSelection && week === currentWeek)) {
+                        option.selected = true;
+                        selectedWeek = week;
+                    }
+                    selector.appendChild(option);
+                });
+            }
             const loggedTable = document.querySelector('#loggedTable tbody');
             loggedTable.innerHTML = '';
             const groupedLoggedData = {};
             loggedData.forEach((item, index) => {
+                if (selectedWeek && item.week !== selectedWeek) return;
                 const assetType = item.assetType;
                 if (assetTypesRequireHours.includes(assetType)) {
                     const row = document.createElement('tr');
@@ -283,6 +366,7 @@
                 <td>${item.assetType}</td>
                 <td>${item.tickets}</td>
                 <td id="hours-cell-${index}">${typeof item.hours === 'string' ? item.hours : '-'}</td>
+                <td>${item.week || '-'}</td>
                 <td>
                     <button class="btn delete-btn" onclick="deleteLogged(${index})">Delete</button>
                 </td>
@@ -295,22 +379,28 @@
                             assetType: item.assetType,
                             tickets: 0,
                             hours: item.hours,
+                            weeks: new Set(),
                             originalIndexes: []
                         };
                     }
                     groupedLoggedData[assetType].originalIndexes.push(index);
                     groupedLoggedData[assetType].tickets += item.tickets;
                     groupedLoggedData[assetType].assetIds.push(item.assetId);
+                    if (item.week) groupedLoggedData[assetType].weeks.add(item.week);
                 }
             });
             Object.values(groupedLoggedData).forEach((group) => {
+                const weekDisplay = Array.from(group.weeks).join(', ') || '-';
                 const row = document.createElement('tr');
                 row.innerHTML = `
             <td>${group.assetIds.join(', ')}</td>
             <td>${group.assetType}</td>
             <td>${group.tickets}</td>
             <td>${typeof group.hours === 'string' ? group.hours : '-'}</td>
-            <td><button class="btn delete-btn" onclick="deleteLoggedGroup(${JSON.stringify(group.originalIndexes)})">Delete</button></td>
+            <td>${weekDisplay}</td>
+            <td>
+                <button class="btn delete-btn" onclick="deleteLoggedGroup(${JSON.stringify(group.originalIndexes)})">Delete</button>
+            </td>
         `;
                 loggedTable.appendChild(row);
             });
@@ -325,6 +415,12 @@
                 renderTables();
             }
         }
+        let selectedWeek = '';
+        function filterByWeek() {
+            const selector = document.getElementById('weekSelector');
+            selectedWeek = selector.value;
+            renderTables();
+        }
         function editMainTime(index) {
             const hoursCell = document.getElementById(`main-hours-cell-${index}`);
             const currentHours = mainData[index].hours || '';
@@ -334,7 +430,7 @@
         <button class="btn" onclick="renderTables()">Cancel</button>
     `;
         }
-         document.getElementById('ticketCount').addEventListener('input', function (e) {
+        document.getElementById('ticketCount').addEventListener('input', function (e) {
             this.value = this.value.replace(/[^0-9]/g, '');
         });
         function saveMainTime(index) {
@@ -414,52 +510,7 @@
             }
             document.getElementById('ticketCount').value = totalTickets > 0 ? totalTickets : '';
         });
-        function addTicket() {
-            const rawAssetIds = document.getElementById('assetId').value.trim();
-            const assetType = document.getElementById('assetType').value;
-            const hoursInput = document.getElementById('hours').value.trim();
-            const hours = hoursInput ? formatInputHours(hoursInput) : null;
-            const assetIdParts = rawAssetIds.split(/[\s,]+/).filter(Boolean);
-            if (!assetIdParts.length || !assetType) {
-                alert("Please enter valid Asset ID(s) and Asset Type.");
-                return;
-            }
-            const assetEntries = [];
-            let totalTickets = 0;
-            for (const part of assetIdParts) {
-                const match = part.match(/^(\d+)(?:\((\d+)\))?$/);
-                if (!match) {
-                    alert(`Invalid asset ID format: ${part}`);
-                    return;
-                }
-                const id = match[1];
-                const tickets = match[2] ? parseInt(match[2], 10) : 1;
-                if (tickets <= 0) {
-                    alert(`Ticket count must be positive for asset ID: ${id}`);
-                    return;
-                }
-                assetEntries.push({ id, tickets });
-                totalTickets += tickets;
-            }
-            if (assetTypesRequireHours.includes(assetType) && (hours === null)) {
-                alert("Please enter a valid time in HH:MM format for 'Web content editing'.");
-                return;
-            }
-            mainData.push({
-                assetIds: assetEntries.map(e => e.id),
-                assetId: assetEntries.map(e => e.id + (e.tickets > 1 ? `(${e.tickets})` : '')).join(', '),
-                assetType,
-                tickets: totalTickets,
-                hours
-            });
-            saveData();
-            renderTables();
-            document.getElementById('assetId').value = '';
-            document.getElementById('assetType').value = '';
-            document.getElementById('ticketCount').value = '';
-            document.getElementById('hours').value = '';
-            toggleHourInput();
-        }
+        
         function openEdit(index) {
             const item = mainData[index];
             const rawParts = item.assetId.split(',').map(x => x.trim());
@@ -569,10 +620,21 @@
         }
         function moveTicket(index) {
             const item = mainData.splice(index, 1)[0];
+            const today = new Date();
+            const dateString = today.toISOString().split('T')[0];
+            const numberOfDays = Math.floor((today - oneJan) / 86400000);
+            const weekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
+            const weekString = `Week ${weekNumber}`;
+            item.week = weekString;
             loggedData.push(item);
             saveData();
             renderTables();
         }
+        const weeksSet = new Set();
+        loggedData.forEach(item => {
+            if (item.week) weeksSet.add(item.week);
+        });
+        const weeksArray = Array.from(weeksSet).sort();
         function deleteMain(index) {
             if (confirm("Are you sure you want to delete this item from the main table?")) {
                 mainData.splice(index, 1);
@@ -758,7 +820,7 @@
         function importData(event) {
             const file = event.target.files[0];
             if (!file) {
-                alert("Không có file được chọn.");
+                alert("No file has been selected.");
                 return;
             }
             const reader = new FileReader();
@@ -771,7 +833,7 @@
                     saveData();
                     renderTables();
                     renderWorkTimeByDay();
-                     alert("Data has been successfully imported!");
+                    alert("Data has been successfully imported!");
                 } catch (error) {
                     alert("The file is invalid or corrupted.");
                     console.error(error);
