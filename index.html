@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8" />
     <title>Managing Tickets & Working Hours</title>
@@ -11,14 +10,12 @@
             background-color: #f8f9fa;
             color: #333;
         }
-
         h2 {
             color: #2c3e50;
             margin-top: 40px;
             border-bottom: 2px solid #ddd;
             padding-bottom: 5px;
         }
-
         input,
         select,
         button {
@@ -28,12 +25,10 @@
             border-radius: 4px;
             font-size: 14px;
         }
-
         button {
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-
         table {
             border-collapse: collapse;
             width: 100%;
@@ -41,28 +36,23 @@
             background: #fff;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
-
         td:first-of-type {
             width: 30vw;
         }
-
         th,
         td {
             border: 1px solid #e0e0e0;
             padding: 10px 12px;
             text-align: center;
         }
-
         th {
             background: #f1f1f1;
             color: #555;
             font-weight: 600;
         }
-
         tr:nth-child(even) {
             background-color: #f9f9f9;
         }
-
         .btn {
             border: none;
             border-radius: 4px;
@@ -70,22 +60,18 @@
             padding: 6px 10px;
             margin: 2px;
         }
-
         .edit-btn {
             background: #f39c12;
             color: white;
         }
-
         .log-btn {
             background: #27ae60;
             color: white;
         }
-
         .delete-btn {
             background: #e74c3c;
             color: white;
         }
-
         .popup-overlay {
             position: fixed;
             top: 0;
@@ -98,7 +84,6 @@
             align-items: center;
             z-index: 1000;
         }
-
         .popup {
             background: white;
             padding: 25px;
@@ -107,40 +92,33 @@
             max-width: 450px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
-
         .popup h3 {
             margin-top: 0;
             color: #2c3e50;
             font-size: 18px;
         }
-
         .popup label {
             display: block;
             margin-bottom: 5px;
         }
-
         .popup button {
             margin-top: 10px;
             padding: 8px 12px;
         }
-
         .popup button:first-of-type {
             background: #27ae60;
             color: white;
         }
-
         .popup button:last-of-type {
             background: #bdc3c7;
             color: #2c3e50;
         }
-
         #workTimeByDay h3 {
             margin-bottom: 10px;
             color: #2980b9;
         }
     </style>
 </head>
-
 <body>
     <h2>Tickets</h2>
     <div>
@@ -294,74 +272,78 @@
             toggleHourInput();
         }
         function renderTables() {
-            mainData.sort((a, b) => {
-                const cmpType = a.assetType.localeCompare(b.assetType);
-                if (cmpType !== 0) return cmpType;
-                const cmpId = a.assetId.localeCompare(b.assetId);
-                if (cmpId !== 0) return cmpId;
-                return a.tickets - b.tickets;
-            });
-            const mainTable = document.querySelector('#mainTable tbody');
-            mainTable.innerHTML = '';
-            mainData.forEach((item, index) => {
-                const canEditTime = assetTypesRequireHours.includes(item.assetType);
-                const hoursDisplay = typeof item.hours === 'string' ? item.hours : '-';
-                const row = document.createElement('tr');
-                row.innerHTML = `
+    mainData.sort((a, b) => {
+        const cmpType = a.assetType.localeCompare(b.assetType);
+        if (cmpType !== 0) return cmpType;
+        const cmpId = a.assetId.localeCompare(b.assetId);
+        if (cmpId !== 0) return cmpId;
+        return a.tickets - b.tickets;
+    });
+    const mainTable = document.querySelector('#mainTable tbody');
+    mainTable.innerHTML = '';
+    mainData.forEach((item, index) => {
+        const canEditTime = assetTypesRequireHours.includes(item.assetType);
+        const hoursDisplay = typeof item.hours === 'string' ? item.hours : '-';
+        const row = document.createElement('tr');
+        row.innerHTML = `
             <td>${item.assetId}</td>
             <td>${item.assetType}</td>
             <td>${item.tickets}</td>
             <td id="main-hours-cell-${index}">${hoursDisplay}</td>
             <td>
                 ${canEditTime
-                        ? `<button class="btn" onclick="editMainTime(${index})">Edit Time</button>`
-                        : `<button class="btn" style="background:#f39c12;color:#fff;" onclick="openEdit(${index})">Edit</button>`
-                    }
+                    ? `<button class="btn" onclick="editMainTime(${index})">Edit Time</button>`
+                    : `<button class="btn" style="background:#f39c12;color:#fff;" onclick="openEdit(${index})">Edit</button>`
+                }
                 <button class="btn" style="background:#27ae60;color:#fff;" onclick="moveTicket(${index})">Log</button>
                 <button class="btn delete-btn" onclick="deleteMain(${index})">Delete</button>
             </td>
         `;
-                mainTable.appendChild(row);
-            });
-            const selector = document.getElementById('weekSelector');
-            if (selector) {
-                const currentSelection = selectedWeek || '';
-                selector.innerHTML = '<option value="">-- Tất cả tuần --</option>';
-                const weeksSet = new Set();
-                loggedData.forEach(item => {
-                    if (item.week) weeksSet.add(item.week);
-                });
-                const today = new Date();
-                const oneJan = new Date(today.getFullYear(), 0, 1);
-                const numberOfDays = Math.floor((today - oneJan) / 86400000);
-                const currentWeekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
-                const currentWeek = `Week ${currentWeekNumber}`;
-                weeksSet.add(currentWeek);
-                const weeksArray = Array.from(weeksSet).sort((a, b) => {
-                    const weekA = parseInt(a.split(' ')[1]);
-                    const weekB = parseInt(b.split(' ')[1]);
-                    return weekA - weekB;
-                });
-                weeksArray.forEach(week => {
-                    const option = document.createElement('option');
-                    option.value = week;
-                    option.textContent = week;
-                    if (week === currentSelection || (!currentSelection && week === currentWeek)) {
-                        option.selected = true;
-                        selectedWeek = week;
-                    }
-                    selector.appendChild(option);
-                });
+        mainTable.appendChild(row);
+    });
+    const selector = document.getElementById('weekSelector');
+    if (selector) {
+        const currentSelection = selectedWeek || '';
+        selector.innerHTML = '<option value="">-- Tất cả tuần --</option>';
+        const weeksSet = new Set();
+        loggedData.forEach(item => {
+            if (item.week) weeksSet.add(item.week);
+        });
+        const today = new Date();
+        const oneJan = new Date(today.getFullYear(), 0, 1);
+        const numberOfDays = Math.floor((today - oneJan) / 86400000);
+        const currentWeekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
+        const currentWeek = `Week ${currentWeekNumber}`;
+        weeksSet.add(currentWeek);
+        const weeksArray = Array.from(weeksSet).sort((a, b) => {
+            const weekA = parseInt(a.split(' ')[1]);
+            const weekB = parseInt(b.split(' ')[1]);
+            return weekA - weekB;
+        });
+        weeksArray.forEach(week => {
+            const option = document.createElement('option');
+            option.value = week;
+            option.textContent = week;
+            if (week === currentSelection || (!currentSelection && week === currentWeek)) {
+                option.selected = true;
+                selectedWeek = week;
             }
-            const loggedTable = document.querySelector('#loggedTable tbody');
-            loggedTable.innerHTML = '';
-            const groupedLoggedData = {};
-            loggedData.forEach((item, index) => {
-                if (selectedWeek && item.week !== selectedWeek) return;
-                const assetType = item.assetType;
-                if (assetTypesRequireHours.includes(assetType)) {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
+            selector.appendChild(option);
+        });
+        if (currentSelection === '') {
+            selector.value = '';
+            selectedWeek = '';
+        }
+    }
+    const loggedTable = document.querySelector('#loggedTable tbody');
+    loggedTable.innerHTML = '';
+    const groupedLoggedData = {};
+    loggedData.forEach((item, index) => {
+        if (selectedWeek !== "" && item.week !== selectedWeek) return;
+        const assetType = item.assetType;
+        if (assetTypesRequireHours.includes(assetType)) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
                 <td>${item.assetId}</td>
                 <td>${item.assetType}</td>
                 <td>${item.tickets}</td>
@@ -371,28 +353,28 @@
                     <button class="btn delete-btn" onclick="deleteLogged(${index})">Delete</button>
                 </td>
             `;
-                    loggedTable.appendChild(row);
-                } else {
-                    if (!groupedLoggedData[assetType]) {
-                        groupedLoggedData[assetType] = {
-                            assetIds: [],
-                            assetType: item.assetType,
-                            tickets: 0,
-                            hours: item.hours,
-                            weeks: new Set(),
-                            originalIndexes: []
-                        };
-                    }
-                    groupedLoggedData[assetType].originalIndexes.push(index);
-                    groupedLoggedData[assetType].tickets += item.tickets;
-                    groupedLoggedData[assetType].assetIds.push(item.assetId);
-                    if (item.week) groupedLoggedData[assetType].weeks.add(item.week);
-                }
-            });
-            Object.values(groupedLoggedData).forEach((group) => {
-                const weekDisplay = Array.from(group.weeks).join(', ') || '-';
-                const row = document.createElement('tr');
-                row.innerHTML = `
+            loggedTable.appendChild(row);
+        } else {
+            if (!groupedLoggedData[assetType]) {
+                groupedLoggedData[assetType] = {
+                    assetIds: [],
+                    assetType: item.assetType,
+                    tickets: 0,
+                    hours: item.hours,
+                    weeks: new Set(),
+                    originalIndexes: []
+                };
+            }
+            groupedLoggedData[assetType].originalIndexes.push(index);
+            groupedLoggedData[assetType].tickets += item.tickets;
+            groupedLoggedData[assetType].assetIds.push(item.assetId);
+            if (item.week) groupedLoggedData[assetType].weeks.add(item.week);
+        }
+    });
+    Object.values(groupedLoggedData).forEach((group) => {
+        const weekDisplay = Array.from(group.weeks).join(', ') || '-';
+        const row = document.createElement('tr');
+        row.innerHTML = `
             <td>${group.assetIds.join(', ')}</td>
             <td>${group.assetType}</td>
             <td>${group.tickets}</td>
@@ -402,9 +384,9 @@
                 <button class="btn delete-btn" onclick="deleteLoggedGroup(${JSON.stringify(group.originalIndexes)})">Delete</button>
             </td>
         `;
-                loggedTable.appendChild(row);
-            });
-        }
+        loggedTable.appendChild(row);
+    });
+}
         function deleteLoggedGroup(indexes) {
             if (!Array.isArray(indexes)) return;
             if (confirm("Are you sure you want to delete all entries in this group?")) {
@@ -510,7 +492,6 @@
             }
             document.getElementById('ticketCount').value = totalTickets > 0 ? totalTickets : '';
         });
-        
         function openEdit(index) {
             const item = mainData[index];
             const rawParts = item.assetId.split(',').map(x => x.trim());
@@ -859,5 +840,4 @@
         }
     </script>
 </body>
-
 </html>
