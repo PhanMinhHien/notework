@@ -163,8 +163,7 @@
     </table>
     <h2>Timesheet</h2>
     <select id="weekSelector" onchange="filterByWeek()">
-        <option value="">-- Tất cả tuần --</option>
-        <!-- Các tuần sẽ được thêm bằng JS -->
+        <option value="">-- All week --</option>
     </select>
     <table id="loggedTable">
         <thead>
@@ -304,7 +303,7 @@
     const selector = document.getElementById('weekSelector');
     if (selector) {
         const currentSelection = selectedWeek || '';
-        selector.innerHTML = '<option value="">-- Tất cả tuần --</option>';
+        selector.innerHTML = '<option value="">-- All week --</option>';
         const weeksSet = new Set();
         loggedData.forEach(item => {
             if (item.week) weeksSet.add(item.week);
