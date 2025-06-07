@@ -252,7 +252,7 @@
             </select>
             <input type="number" id="ticketCount" placeholder="Amount of Assets" />
             <input type="text" id="hours" placeholder="Working Hours" style="display:none;" />
-            <button onclick="addTicket()" style="background:#f39c12;color:#fff;">Add</button>
+            <button onclick="addTicket()" style="background:#000000;color:#fff;">Add Ticket</button>
         </div>
         <table id="mainTable">
             <thead>
@@ -328,10 +328,10 @@
             <label>Work Date: <input type="date" id="workDate" value="" /></label>
             <label>Time In: <input type="time" id="timeIn" /></label>
             <label>Time Out: <input type="time" id="timeOut" /></label>
-            <button onclick="addWorkTime()">Add Work Time</button>
+            <button onclick="addWorkTime()" style="background:#000000;color:#fff;">Add Work Time</button>
         </div>
         <div id="workTimeByDay"></div>
-        <button onclick="resetWorkTimes()" style="background:#e67e22;color:white;" class="btn">Reset Work Times</button>
+        <button onclick="resetWorkTimes()" style="background:#e74c3c;color:white;" class="btn">Reset Work Times</button>
     </section>
     <section id="backupRestoreSection" class="section">
         <h2>Backup & Restore</h2>
@@ -427,7 +427,7 @@
                         : `<button class="btn" style="background:#f39c12;color:#fff;" onclick="openEdit(${index})">Edit</button>`
                     }
                 <button class="btn" style="background:#27ae60;color:#fff;" onclick="moveTicket(${index})">Log</button>
-                <button class="btn delete-btn" onclick="deleteMain(${index})">Delete</button>
+                <button class="btn delete-btn" style="background:#e74c3c;color:white;" onclick="deleteMain(${index})">Delete</button>
             </td>
         `;
                 mainTable.appendChild(row);
@@ -511,7 +511,7 @@
                 <td id="hours-cell-${index}">${typeof item.hours === 'string' ? item.hours : '-'}</td>
                 <td>${item.week || '-'}</td>
                 <td>
-                    <button class="btn delete-btn" onclick="deleteLogged(${index})">Delete</button>
+                    <button class="btn delete-btn" style="background:#e74c3c;color:white;" onclick="deleteLogged(${index})">Delete</button>
                 </td>
             `;
                     loggedTable.appendChild(row);
@@ -573,7 +573,7 @@
             <td>${typeof group.hours === 'string' ? group.hours : '-'}</td>
             <td>${weekDisplay}</td>
             <td>
-                <button class="btn delete-btn" onclick="deleteLoggedGroup(${JSON.stringify(group.originalIndexes)})">Delete</button>
+                <button class="btn delete-btn" style="background:#e74c3c;color:white;" onclick="deleteLoggedGroup(${JSON.stringify(group.originalIndexes)})">Delete</button>
             </td>
         `;
                 loggedTable.appendChild(row);
@@ -945,7 +945,7 @@
      <td>${decimalHoursToHM(w.duration)}</td>
       <td>
         ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : ''}
-        <button class="btn delete-btn" onclick="deleteWorkTimeByDay(${i}, ${idx})">Delete</button>
+        <button class="btn delete-btn" style="background:#e74c3c;color:white;" onclick="deleteWorkTimeByDay(${i}, ${idx})">Delete</button>
       </td>
     </tr>`;
                 }).join('')}
