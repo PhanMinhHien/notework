@@ -474,8 +474,8 @@
                 const oneJan = new Date(today.getFullYear(), 0, 1);
                 const numberOfDays = Math.floor((today - oneJan) / 86400000);
                 const currentWeekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
-                const currentWeek = `Week ${currentWeekNumber}`;
-                weeksSet.add(currentWeek);
+                // const currentWeek = `Week ${currentWeekNumber}`;
+                // weeksSet.add(currentWeek);
                 const weeksArray = Array.from(weeksSet).sort((a, b) => {
                     const weekA = parseInt(a.split(' ')[1]);
                     const weekB = parseInt(b.split(' ')[1]);
@@ -485,7 +485,7 @@
                     const option = document.createElement('option');
                     option.value = week;
                     option.textContent = week;
-                    if (week === currentSelection || (!currentSelection && week === currentWeek)) {
+                    if (week === currentSelection) {
                         option.selected = true;
                         selectedWeek = week;
                     }
