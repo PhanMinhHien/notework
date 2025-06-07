@@ -230,27 +230,27 @@
             <input type="text" id="assetId" placeholder="Asset IDs" oninput="autoCountTickets()" />
             <select id="assetType" onchange="toggleHourInput()">
                 <option value="">-- Select Asset Type --</option>
-                    <option>Article page creation</option>
-                    <option>Article page versioning</option>
-                    <option>Banner release</option>
-                    <option>Dynamic Banner Creation</option>
-                    <option>Dynamic Banner Versioning</option>
-                    <option>Graphics Production</option>
-                    <option>Landing page creation</option>
-                    <option>Landing page versioning</option>
-                    <option>Newsletter creation</option>
-                    <option>Newsletter repetition</option>
-                    <option>Newsletter versioning</option>
-                    <option>PDF production & editing request</option>
-                    <option>Print material design request</option>
-                    <option>Static Banner Creation</option>
-                    <option>Static Banner Versioning</option>
-                    <option>TODAY Newsletter</option>
-                    <option>Teaser creation</option>
-                    <option>Video creation, editing & upload request</option>
-                    <option>Web content editing</option>
+                <option>Article page creation</option>
+                <option>Article page versioning</option>
+                <option>Banner release</option>
+                <option>Dynamic Banner Creation</option>
+                <option>Dynamic Banner Versioning</option>
+                <option>Graphics Production</option>
+                <option>Landing page creation</option>
+                <option>Landing page versioning</option>
+                <option>Newsletter creation</option>
+                <option>Newsletter repetition</option>
+                <option>Newsletter versioning</option>
+                <option>PDF production & editing request</option>
+                <option>Print material design request</option>
+                <option>Static Banner Creation</option>
+                <option>Static Banner Versioning</option>
+                <option>TODAY Newsletter</option>
+                <option>Teaser creation</option>
+                <option>Video creation, editing & upload request</option>
+                <option>Web content editing</option>
             </select>
-            <input type="number" id="ticketCount" placeholder="Amount of Assets" />
+            <input type="text" readonly id="ticketCount" style="background:#f2f2f2;" placeholder="Amount of Assets" />
             <input type="text" id="hours" placeholder="Working Hours" style="display:none;" />
             <button onclick="addTicket()" style="background:#000000;color:#fff;">Add Ticket</button>
         </div>
@@ -357,51 +357,64 @@
             localStorage.setItem('workTimes', JSON.stringify(workTimes));
         }
         function addTicket() {
-            const rawAssetIds = document.getElementById('assetId').value.trim();
-            const assetType = document.getElementById('assetType').value;
-            const hoursInput = document.getElementById('hours').value.trim();
-            const hours = hoursInput ? formatInputHours(hoursInput) : null;
-            const assetIdParts = rawAssetIds.split(/[\s,]+/).filter(Boolean);
-            if (!assetIdParts.length || !assetType) {
-                alert("Please enter valid Asset ID(s) and Asset Type.");
-                return;
-            }
-            const assetEntries = [];
-            let totalTickets = 0;
-            for (const part of assetIdParts) {
-                const match = part.match(/^(\d+)(?:\((\d+)\))?$/);
-                if (!match) {
-                    alert(`Invalid asset ID format: ${part}`);
-                    return;
-                }
-                const id = match[1];
-                const tickets = match[2] ? parseInt(match[2], 10) : 1;
-                if (tickets <= 0) {
-                    alert(`Ticket count must be positive for asset ID: ${id}`);
-                    return;
-                }
-                assetEntries.push({ id, tickets });
-                totalTickets += tickets;
-            }
-            if (assetTypesRequireHours.includes(assetType) && (hours === null)) {
-                alert("Please enter a valid time in HH:MM format for 'Web content editing'.");
-                return;
-            }
-            mainData.push({
-                assetIds: assetEntries.map(e => e.id),
-                assetId: assetEntries.map(e => e.id + (e.tickets > 1 ? `(${e.tickets})` : '')).join(', '),
-                assetType,
-                tickets: totalTickets,
-                hours
-            });
-            saveData();
-            renderTables();
-            document.getElementById('assetId').value = '';
-            document.getElementById('assetType').value = '';
-            document.getElementById('ticketCount').value = '';
-            document.getElementById('hours').value = '';
-            toggleHourInput();
+    const rawAssetIds = document.getElementById('assetId').value.trim();
+    const assetType = document.getElementById('assetType').value;
+    let hoursInput = document.getElementById('hours').value.trim();
+    const assetIdParts = rawAssetIds.split(/[\s,]+/).filter(Boolean);
+    if (!assetIdParts.length || !assetType) {
+        alert("Please enter valid Asset ID(s) and Asset Type.");
+        return;
+    }
+    const assetEntries = [];
+    let totalTickets = 0;
+    for (const part of assetIdParts) {
+        const match = part.match(/^(\d+)(?:\((\d+)\))?$/);
+        if (!match) {
+            alert(`Invalid asset ID format: ${part}`);
+            return;
         }
+        const id = match[1];
+        const tickets = match[2] ? parseInt(match[2], 10) : 1;
+        if (tickets <= 0) {
+            alert(`Ticket count must be positive for asset ID: ${id}`);
+            return;
+        }
+        assetEntries.push({ id, tickets });
+        totalTickets += tickets;
+    }
+
+    let hours = null;
+    if (assetType.toLowerCase() === "teaser creation") {
+        const decimalHours = totalTickets * 0.5;
+        hours = decimalHoursToHM(decimalHours);
+    } else if (assetType.toLowerCase() === "banner release") {
+        const decimalHours = totalTickets * 0.25;
+        hours = decimalHoursToHM(decimalHours);
+    } else {
+        hours = hoursInput ? formatInputHours(hoursInput) : null;
+    }
+
+    if (assetTypesRequireHours.includes(assetType) && (hours === null)) {
+        alert("Please enter a valid time in HH:MM format for 'Web content editing'.");
+        return;
+    }
+
+    mainData.push({
+        assetIds: assetEntries.map(e => e.id),
+        assetId: assetEntries.map(e => e.id + (e.tickets > 1 ? `(${e.tickets})` : '')).join(', '),
+        assetType,
+        tickets: totalTickets,
+        hours
+    });
+    saveData();
+    renderTables();
+    document.getElementById('assetId').value = '';
+    document.getElementById('assetType').value = '';
+    document.getElementById('ticketCount').value = '';
+    document.getElementById('hours').value = '';
+    toggleHourInput();
+}
+
         function renderTables() {
             mainData.sort((a, b) => {
                 const cmpType = a.assetType.localeCompare(b.assetType);
