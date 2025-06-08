@@ -31,7 +31,7 @@
         }
 
         .section {
-            background: white;
+            background: #fff;
             padding: 20px 25px;
             border-radius: 8px;
             box-shadow: 0 3px 8px rgb(0 0 0 / 0.1);
@@ -79,27 +79,27 @@
 
         button[style*="background:#f39c12"] {
             background: #f39c12;
-            color: white;
+            color: #fff;
         }
 
         button[style*="background:#27ae60"] {
             background: #27ae60;
-            color: white;
+            color: #fff;
         }
 
         button[style*="background:#e74c3c"] {
             background: #e74c3c;
-            color: white;
+            color: #fff;
         }
 
         button[style*="background:#e67e22"] {
             background: #e67e22;
-            color: white;
+            color: #fff;
         }
 
         button[style*="background:#2980b9"] {
             background: #2980b9;
-            color: white;
+            color: #fff;
         }
 
         @media(max-width: 1670px) {
@@ -127,7 +127,7 @@
 
         th {
             background-color: #2980b9;
-            color: white;
+            color: #fff;
             text-align: left;
             padding: 10px 12px;
             font-weight: 600;
@@ -185,7 +185,7 @@
         }
 
         .popup {
-            background: white;
+            background: #fff;
             padding: 25px 30px;
             border-radius: 10px;
             width: 380px;
@@ -219,6 +219,11 @@
             #worktimeSection {
                 padding: 10px;
             }
+
+        }
+
+        #popupCheckboxes label {
+            display: block;
         }
     </style>
 </head>
@@ -283,7 +288,8 @@
         <select id="weekSelector" onchange="filterByWeek()">
             <option value="">-- All week --</option>
         </select>
-        <button id="deleteWeekBtn" onclick="deleteWeek()" style="background:#e74c3c;color:white;display:none;" class="btn">Delete Week</button>
+        <button id="deleteWeekBtn" onclick="deleteWeek()" style="background:#e74c3c;color:#fff;display:none;"
+            class="btn">Delete Week</button>
         <table id="loggedTable">
             <thead>
                 <tr>
@@ -309,7 +315,7 @@
             <tbody></tbody>
         </table>
         <br>
-        <button onclick="resetLoggedTable()" style="background:#e74c3c;color:white;" class="btn">Reset
+        <button onclick="resetLoggedTable()" style="background:#e74c3c;color:#fff;" class="btn">Reset
             Timesheet</button>
         <div id="popupOverlay" class="popup-overlay" style="display: none;">
             <div class="popup">
@@ -317,8 +323,8 @@
                 <div id="popupCheckboxes"></div>
                 <input type="text" id="newAssetIdInput" placeholder="Add a New Asset ID" style="margin-top: 10px;">
                 <br>
-                <button onclick="applyEdit()">Apply</button>
-                <button onclick="closePopup()">Discard</button>
+                <button style="background:#000000;color:#fff;" onclick="applyEdit()">Apply</button>
+                <button style="background:#e74c3c;color:#fff;" onclick="closePopup()">Discard</button>
             </div>
         </div>
     </section>
@@ -331,7 +337,7 @@
             <button onclick="addWorkTime()" style="background:#000000;color:#fff;">Add Work Time</button>
         </div>
         <div id="workTimeByDay"></div>
-        <button onclick="resetWorkTimes()" style="background:#e74c3c;color:white;" class="btn">Reset Work Times</button>
+        <button onclick="resetWorkTimes()" style="background:#e74c3c;color:#fff;" class="btn">Reset Work Times</button>
     </section>
     <section id="backupRestoreSection" class="section">
         <h2>Backup & Restore</h2>
@@ -357,64 +363,60 @@
             localStorage.setItem('workTimes', JSON.stringify(workTimes));
         }
         function addTicket() {
-    const rawAssetIds = document.getElementById('assetId').value.trim();
-    const assetType = document.getElementById('assetType').value;
-    let hoursInput = document.getElementById('hours').value.trim();
-    const assetIdParts = rawAssetIds.split(/[\s,]+/).filter(Boolean);
-    if (!assetIdParts.length || !assetType) {
-        alert("Please enter valid Asset ID(s) and Asset Type.");
-        return;
-    }
-    const assetEntries = [];
-    let totalTickets = 0;
-    for (const part of assetIdParts) {
-        const match = part.match(/^(\d+)(?:\((\d+)\))?$/);
-        if (!match) {
-            alert(`Invalid asset ID format: ${part}`);
-            return;
+            const rawAssetIds = document.getElementById('assetId').value.trim();
+            const assetType = document.getElementById('assetType').value;
+            let hoursInput = document.getElementById('hours').value.trim();
+            const assetIdParts = rawAssetIds.split(/[\s,]+/).filter(Boolean);
+            if (!assetIdParts.length || !assetType) {
+                alert("Please enter valid Asset ID(s) and Asset Type.");
+                return;
+            }
+            const assetEntries = [];
+            let totalTickets = 0;
+            for (const part of assetIdParts) {
+                const match = part.match(/^(\d+)(?:\((\d+)\))?$/);
+                if (!match) {
+                    alert(`Invalid asset ID format: ${part}`);
+                    return;
+                }
+                const id = match[1];
+                const tickets = match[2] ? parseInt(match[2], 10) : 1;
+                if (tickets <= 0) {
+                    alert(`Ticket count must be positive for asset ID: ${id}`);
+                    return;
+                }
+                assetEntries.push({ id, tickets });
+                totalTickets += tickets;
+            }
+            let hours = null;
+            if (assetType.toLowerCase() === "teaser creation") {
+                const decimalHours = totalTickets * 0.5;
+                hours = decimalHoursToHM(decimalHours);
+            } else if (assetType.toLowerCase() === "banner release") {
+                const decimalHours = totalTickets * 0.25;
+                hours = decimalHoursToHM(decimalHours);
+            } else {
+                hours = hoursInput ? formatInputHours(hoursInput) : null;
+            }
+            if (assetTypesRequireHours.includes(assetType) && (hours === null)) {
+                alert("Please enter a valid time in HH:MM format for 'Web content editing'.");
+                return;
+            }
+            mainData.push({
+                assetIds: assetEntries.map(e => e.id),
+                assetId: assetEntries.map(e => e.id + (e.tickets > 1 ? `(${e.tickets})` : '')).join(', '),
+                assetType,
+                tickets: totalTickets,
+                hours
+            });
+            saveData();
+            renderTables();
+            document.getElementById('assetId').value = '';
+            document.getElementById('assetType').value = '';
+            document.getElementById('ticketCount').value = '';
+            document.getElementById('hours').value = '';
+            toggleHourInput();
         }
-        const id = match[1];
-        const tickets = match[2] ? parseInt(match[2], 10) : 1;
-        if (tickets <= 0) {
-            alert(`Ticket count must be positive for asset ID: ${id}`);
-            return;
-        }
-        assetEntries.push({ id, tickets });
-        totalTickets += tickets;
-    }
-
-    let hours = null;
-    if (assetType.toLowerCase() === "teaser creation") {
-        const decimalHours = totalTickets * 0.5;
-        hours = decimalHoursToHM(decimalHours);
-    } else if (assetType.toLowerCase() === "banner release") {
-        const decimalHours = totalTickets * 0.25;
-        hours = decimalHoursToHM(decimalHours);
-    } else {
-        hours = hoursInput ? formatInputHours(hoursInput) : null;
-    }
-
-    if (assetTypesRequireHours.includes(assetType) && (hours === null)) {
-        alert("Please enter a valid time in HH:MM format for 'Web content editing'.");
-        return;
-    }
-
-    mainData.push({
-        assetIds: assetEntries.map(e => e.id),
-        assetId: assetEntries.map(e => e.id + (e.tickets > 1 ? `(${e.tickets})` : '')).join(', '),
-        assetType,
-        tickets: totalTickets,
-        hours
-    });
-    saveData();
-    renderTables();
-    document.getElementById('assetId').value = '';
-    document.getElementById('assetType').value = '';
-    document.getElementById('ticketCount').value = '';
-    document.getElementById('hours').value = '';
-    toggleHourInput();
-}
-
         function renderTables() {
             mainData.sort((a, b) => {
                 const cmpType = a.assetType.localeCompare(b.assetType);
@@ -440,7 +442,7 @@
                         : `<button class="btn" style="background:#f39c12;color:#fff;" onclick="openEdit(${index})">Edit</button>`
                     }
                 <button class="btn" style="background:#27ae60;color:#fff;" onclick="moveTicket(${index})">Log</button>
-                <button class="btn delete-btn" style="background:#e74c3c;color:white;" onclick="deleteMain(${index})">Delete</button>
+                <button class="btn delete-btn" style="background:#e74c3c;color:#fff;" onclick="deleteMain(${index})">Delete</button>
             </td>
         `;
                 mainTable.appendChild(row);
@@ -487,8 +489,6 @@
                 const oneJan = new Date(today.getFullYear(), 0, 1);
                 const numberOfDays = Math.floor((today - oneJan) / 86400000);
                 const currentWeekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
-                // const currentWeek = `Week ${currentWeekNumber}`;
-                // weeksSet.add(currentWeek);
                 const weeksArray = Array.from(weeksSet).sort((a, b) => {
                     const weekA = parseInt(a.split(' ')[1]);
                     const weekB = parseInt(b.split(' ')[1]);
@@ -524,7 +524,7 @@
                 <td id="hours-cell-${index}">${typeof item.hours === 'string' ? item.hours : '-'}</td>
                 <td>${item.week || '-'}</td>
                 <td>
-                    <button class="btn delete-btn" style="background:#e74c3c;color:white;" onclick="deleteLogged(${index})">Delete</button>
+                    <button class="btn delete-btn" style="background:#e74c3c;color:#fff;" onclick="deleteLogged(${index})">Delete</button>
                 </td>
             `;
                     loggedTable.appendChild(row);
@@ -586,7 +586,7 @@
             <td>${typeof group.hours === 'string' ? group.hours : '-'}</td>
             <td>${weekDisplay}</td>
             <td>
-                <button class="btn delete-btn" style="background:#e74c3c;color:white;" onclick="deleteLoggedGroup(${JSON.stringify(group.originalIndexes)})">Delete</button>
+                <button class="btn delete-btn" style="background:#e74c3c;color:#fff;" onclick="deleteLoggedGroup(${JSON.stringify(group.originalIndexes)})">Delete</button>
             </td>
         `;
                 loggedTable.appendChild(row);
@@ -603,41 +603,32 @@
             }
         }
         let selectedWeek = '';
-        // function filterByWeek() {
-        //     const selector = document.getElementById('weekSelector');
-        //     selectedWeek = selector.value;
-        //     renderTables();
-        // }
         function filterByWeek() {
-    const selector = document.getElementById('weekSelector');
-    selectedWeek = selector.value;
-
-    const deleteWeekBtn = document.getElementById('deleteWeekBtn');
-    if (selectedWeek) {
-        const weekNumber = selectedWeek.split(' ')[1];
-        deleteWeekBtn.textContent = `Delete Week ${weekNumber}`;
-        deleteWeekBtn.style.display = 'inline-block';
-    } else {
-        deleteWeekBtn.style.display = 'none';
-    }
-
-    renderTables();
-}
-
+            const selector = document.getElementById('weekSelector');
+            selectedWeek = selector.value;
+            const deleteWeekBtn = document.getElementById('deleteWeekBtn');
+            if (selectedWeek) {
+                const weekNumber = selectedWeek.split(' ')[1];
+                deleteWeekBtn.textContent = `Delete Week ${weekNumber}`;
+                deleteWeekBtn.style.display = 'inline-block';
+            } else {
+                deleteWeekBtn.style.display = 'none';
+            }
+            renderTables();
+        }
         function deleteWeek() {
-    if (!selectedWeek) {
-        alert("Please select a week to delete.");
-        return;
-    }
-    if (confirm(`Are you sure you want to delete all logs in ${selectedWeek}?`)) {
-        loggedData = loggedData.filter(item => item.week !== selectedWeek);
-        selectedWeek = ''; 
-        saveData();
-        renderTables();
-        alert(`Logs for ${selectedWeek} have been deleted.`);
-    }
-}
-
+            if (!selectedWeek) {
+                alert("Please select a week to delete.");
+                return;
+            }
+            if (confirm(`Are you sure you want to delete all logs in ${selectedWeek}?`)) {
+                loggedData = loggedData.filter(item => item.week !== selectedWeek);
+                selectedWeek = '';
+                saveData();
+                renderTables();
+                alert(`Logs for ${selectedWeek} have been deleted.`);
+            }
+        }
         function editMainTime(index) {
             const hoursCell = document.getElementById(`main-hours-cell-${index}`);
             const currentHours = mainData[index].hours || '';
@@ -799,14 +790,29 @@
                 const tickets = match[2] ? parseInt(match[2], 10) : 1;
                 newEntries.push({ id, tickets });
             }
+            newEntries.forEach(entry => {
+                if (keptTickets[entry.id]) {
+                    keptTickets[entry.id] += entry.tickets;
+                } else {
+                    kept.push(entry.id);
+                    keptTickets[entry.id] = entry.tickets;
+                }
+            });
             const item = mainData[editIndex];
-            const finalEntries = [
-                ...kept.map(id => ({ id, tickets: keptTickets[id] })),
-                ...newEntries
-            ];
+            const finalEntries = kept.map(id => ({
+                id,
+                tickets: keptTickets[id]
+            }));
             mainData[editIndex].assetIds = finalEntries.map(e => e.id);
             mainData[editIndex].assetId = finalEntries.map(e => e.id + (e.tickets > 1 ? `(${e.tickets})` : '')).join(', ');
             mainData[editIndex].tickets = finalEntries.reduce((sum, e) => sum + e.tickets, 0);
+            if (item.assetType.toLowerCase() === "teaser creation") {
+                const decimalHours = mainData[editIndex].tickets * 0.5;
+                mainData[editIndex].hours = decimalHoursToHM(decimalHours);
+            } else if (item.assetType.toLowerCase() === "banner release") {
+                const decimalHours = mainData[editIndex].tickets * 0.25;
+                mainData[editIndex].hours = decimalHoursToHM(decimalHours);
+            }
             if (removed.length > 0) {
                 const removedEntries = removed.map(id => ({
                     id,
@@ -958,7 +964,7 @@
      <td>${decimalHoursToHM(w.duration)}</td>
       <td>
         ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : ''}
-        <button class="btn delete-btn" style="background:#e74c3c;color:white;" onclick="deleteWorkTimeByDay(${i}, ${idx})">Delete</button>
+        <button class="btn delete-btn" style="background:#e74c3c;color:#fff;" onclick="deleteWorkTimeByDay(${i}, ${idx})">Delete</button>
       </td>
     </tr>`;
                 }).join('')}
