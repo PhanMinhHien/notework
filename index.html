@@ -425,6 +425,8 @@
                 if (cmpId !== 0) return cmpId;
                 return a.tickets - b.tickets;
             });
+          
+
             const mainTable = document.querySelector('#mainTable tbody');
             mainTable.innerHTML = '';
             mainData.forEach((item, index) => {
@@ -512,6 +514,13 @@
             const loggedTable = document.querySelector('#loggedTable tbody');
             loggedTable.innerHTML = '';
             const groupedLoggedData = {};
+            loggedData.sort((a, b) => {
+    const cmpType = a.assetType.localeCompare(b.assetType);
+    if (cmpType !== 0) return cmpType;
+    const cmpId = a.assetId.localeCompare(b.assetId);
+    if (cmpId !== 0) return cmpId;
+    return a.tickets - b.tickets;
+});
             loggedData.forEach((item, index) => {
                 if (selectedWeek !== "" && item.week !== selectedWeek) return;
                 const assetType = item.assetType;
