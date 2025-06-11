@@ -322,11 +322,14 @@
                 <h3>Select the Asset IDs to keep</h3>
                 <div id="popupCheckboxes"></div>
                 <input type="text" id="newAssetIdInput" placeholder="Add a New Asset ID" style="margin-top: 10px;">
+                <button style="background:#27ae60;color:#fff;margin-top:10px;" onclick="addNewAssetId()">Add</button>
                 <br>
                 <button style="background:#000000;color:#fff;" onclick="applyEdit()">Apply</button>
                 <button style="background:#e74c3c;color:#fff;" onclick="closePopup()">Discard</button>
             </div>
         </div>
+
+
     </section>
     <section id="worktimeSection" class="section">
         <h2>Work Time</h2>
@@ -425,7 +428,7 @@
                 if (cmpId !== 0) return cmpId;
                 return a.tickets - b.tickets;
             });
-          
+
 
             const mainTable = document.querySelector('#mainTable tbody');
             mainTable.innerHTML = '';
@@ -515,12 +518,12 @@
             loggedTable.innerHTML = '';
             const groupedLoggedData = {};
             loggedData.sort((a, b) => {
-    const cmpType = a.assetType.localeCompare(b.assetType);
-    if (cmpType !== 0) return cmpType;
-    const cmpId = a.assetId.localeCompare(b.assetId);
-    if (cmpId !== 0) return cmpId;
-    return a.tickets - b.tickets;
-});
+                const cmpType = a.assetType.localeCompare(b.assetType);
+                if (cmpType !== 0) return cmpType;
+                const cmpId = a.assetId.localeCompare(b.assetId);
+                if (cmpId !== 0) return cmpId;
+                return a.tickets - b.tickets;
+            });
             loggedData.forEach((item, index) => {
                 if (selectedWeek !== "" && item.week !== selectedWeek) return;
                 const assetType = item.assetType;
@@ -742,14 +745,19 @@
             container.innerHTML = '';
             idsWithTickets.forEach(entry => {
                 const label = document.createElement('label');
+                label.style.display = 'block';
                 label.innerHTML = `
             <input type="checkbox" value="${entry.id}" data-tickets="${entry.tickets}" checked>
-            ${entry.id} (${entry.tickets})
+            ${entry.id} (<span class="ticket-count">${entry.tickets}</span>)
+            <a href="#" class="delete-id-link" onclick="removeAssetId(this, '${entry.id}')"
+               style="margin-left:5px; color:red; text-decoration:none;">x</a>
         `;
                 container.appendChild(label);
             });
             document.getElementById('popupOverlay').style.display = 'flex';
         }
+
+
         function formatInputHours(val) {
             const regex = /^(\d{1,2}):([0-5]\d)$/;
             const match = val.match(regex);
@@ -830,6 +838,12 @@
                 const removedHours = assetTypesRequireHours.includes(item.assetType) && item.hours
                     ? parseHMtoFloat(item.hours)
                     : null;
+                const today = new Date();
+                const oneJan = new Date(today.getFullYear(), 0, 1);
+                const numberOfDays = Math.floor((today - oneJan) / 86400000);
+                const currentWeekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
+                const weekString = `Week ${currentWeekNumber}`;
+
                 loggedData.push({
                     assetIds: removedEntries.map(e => e.id),
                     assetId: removedEntries.map(e => e.id + (e.tickets > 1 ? `(${e.tickets})` : '')).join(', '),
@@ -837,14 +851,75 @@
                     tickets: removedEntries.reduce((sum, e) => sum + e.tickets, 0),
                     hours: removedHours !== null
                         ? formatInputHours(removedHours * removedEntries.reduce((sum, e) => sum + e.tickets, 0) / finalEntries.reduce((sum, e) => sum + e.tickets, 0))
-                        : undefined
+                        : undefined,
+                    week: weekString
                 });
+
+
             }
             saveData();
             renderTables();
             document.getElementById('newAssetIdInput').value = '';
             closePopup();
         }
+        function addNewAssetId() {
+            const input = document.getElementById('newAssetIdInput');
+            const value = input.value.trim();
+            if (!value) {
+                alert('Please enter a valid Asset ID.');
+                return;
+            }
+
+            const newParts = value.split(/\s+/).filter(Boolean);
+            for (const part of newParts) {
+                const match = part.match(/^(\d+)(?:\((\d+)\))?$/);
+                if (!match) {
+                    alert(`Invalid asset ID format: ${part}`);
+                    return;
+                }
+                const id = match[1];
+                const tickets = match[2] ? parseInt(match[2], 10) : 1;
+
+                const existingCheckbox = document.querySelector(`#popupCheckboxes input[value="${id}"]`);
+                if (existingCheckbox) {
+                    const currentTickets = parseInt(existingCheckbox.getAttribute('data-tickets'), 10) || 1;
+                    const newTotalTickets = currentTickets + tickets;
+                    existingCheckbox.setAttribute('data-tickets', newTotalTickets);
+                    const label = existingCheckbox.parentElement;
+                    label.querySelector('.tickets-count').textContent = `(${newTotalTickets})`;
+                } else {
+                    const container = document.getElementById('popupCheckboxes');
+                    const label = document.createElement('label');
+                    label.style.display = 'block';
+                    label.innerHTML = `
+                <input type="checkbox" value="${id}" data-tickets="${tickets}" checked>
+                ${id} <span class="tickets-count">(${tickets})</span>
+                <a href="#" class="delete-id-link" onclick="removeAssetId(this, '${id}')"
+               style="margin-left:5px; color:red; text-decoration:none;">x</a>
+            `;
+                    container.appendChild(label);
+                }
+            }
+            input.value = '';
+        }
+        function removeAssetId(link, id) {
+            const label = link.closest('label');
+            const checkbox = label.querySelector('input[type=checkbox]');
+            let tickets = parseInt(checkbox.getAttribute('data-tickets')) || 1;
+
+            if (confirm(`Are you sure you want to remove 1 ticket from Asset ID ${id}?`)) {
+                if (tickets > 1) {
+                    tickets -= 1;
+                    checkbox.setAttribute('data-tickets', tickets);
+                    label.querySelector('.ticket-count').textContent = tickets;
+                } else {
+                    label.remove();
+                }
+            }
+        }
+
+
+
         function closePopup() {
             document.getElementById('popupOverlay').style.display = 'none';
             editIndex = null;
@@ -1082,6 +1157,7 @@
             };
             reader.readAsText(file);
         }
+
         function resetLoggedTable() {
             if (confirm("Are you sure you want to delete all data in the Timesheet?")) {
                 loggedData = [];
@@ -1098,6 +1174,12 @@
                 alert("All work time data has been deleted.");
             }
         }
+        document.addEventListener("keydown", function (event) {
+            if (event.target.id === "newAssetIdInput" && event.key === "Enter") {
+                event.preventDefault();
+                addNewAssetId();
+            }
+        });
     </script>
 </body>
 
