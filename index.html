@@ -24,15 +24,12 @@
             color: #2980b9;
         }
 
-        /* Màu sắc cho trạng thái */
         .not-logged {
             color: red;
-            /* Màu đỏ cho 'Not logged' */
         }
 
         .logged {
             color: green;
-            /* Màu xanh cho 'Logged' */
         }
 
         h3 {
@@ -504,7 +501,7 @@
                 if (canEditTime) {
                     const hoursCell = document.getElementById(`main-hours-cell-${index}`);
                     hoursCell.style.cursor = 'pointer';
-                    hoursCell.title = 'Click để sửa giờ';
+                    hoursCell.title = 'Click to edit';
                     hoursCell.addEventListener('click', () => editMainTime(index));
                 }
             });
@@ -700,7 +697,7 @@
                 row.innerHTML = `
             <td>${item.id}</td>
             <td>${item.assetType || 'N/A'}</td>
-            <td id="fix-time" onclick="editCorrectionCell(this, '${item.id}')" data-id="${item.id}">${item.hours || ''}</td>
+            <td id="fix-time" style="cursor: pointer;" onclick="editCorrectionCell(this, '${item.id}')" data-id="${item.id}">${item.hours || ''}</td>
             <td class="${logStatusClass}">${logStatus}</td>
         `;
                 correctionTableBody.appendChild(row);
@@ -709,7 +706,7 @@
         function editCorrectionCell(td, id) {
             const currentValue = td.textContent.trim();
 
-            if (td.querySelector('input')) return; 
+            if (td.querySelector('input')) return;
 
             const input = document.createElement('input');
             input.type = 'text';
@@ -798,7 +795,7 @@
                 entry.hours = hoursStr;
             }
 
-            populateCorrectionTable(); 
+            populateCorrectionTable();
             saveData();
         }
         function deleteLoggedGroup(indexes) {
