@@ -237,6 +237,19 @@
         #popupCheckboxes label {
             display: block;
         }
+
+        #fix-time {
+            width: 180px;
+        }
+
+        #mainTable td input {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        #mainTable th:nth-last-of-type(2) {
+            width: 180px;
+        }
     </style>
 </head>
 
@@ -305,7 +318,6 @@
                     <th>ID</th>
                     <th>Asset Type</th>
                     <th>Hours</th>
-                    <th>Actions</th>
                     <th>Log?</th>
                 </tr>
             </thead>
@@ -468,24 +480,36 @@
             mainTable.innerHTML = '';
             mainData.forEach((item, index) => {
                 const canEditTime = assetTypesRequireHours.includes(item.assetType);
-                const hoursDisplay = typeof item.hours === 'string' ? item.hours : '-';
+                const hoursDisplay = typeof item.hours === 'string' && item.hours !== '' ? item.hours : '-';
+
                 const row = document.createElement('tr');
+
                 row.innerHTML = `
-            <td>${item.assetId}</td>
-            <td>${item.assetType}</td>
-            <td>${item.tickets}</td>
-            <td id="main-hours-cell-${index}">${hoursDisplay}</td>
-            <td>
-                ${canEditTime
-                        ? `<button class="btn" onclick="editMainTime(${index})">Edit Time</button>`
-                        : `<button class="btn" style="background:#f39c12;color:#fff;" onclick="openEdit(${index})">Edit</button>`
+        <td>${item.assetId}</td>
+        <td>${item.assetType}</td>
+        <td>${item.tickets}</td>
+        <td id="main-hours-cell-${index}" ${canEditTime ? 'class="editable-hours"' : ''}>${hoursDisplay}</td>
+        <td>
+            ${!canEditTime
+                        ? `<button class="btn" style="background:#f39c12;color:#fff;" onclick="openEdit(${index})">Edit</button>`
+                        : ''
                     }
-                <button class="btn" style="background:#27ae60;color:#fff;" onclick="moveTicket(${index})">Log</button>
-                <button class="btn delete-btn" style="background:#e74c3c;color:#fff;" onclick="deleteMain(${index})">Delete</button>
-            </td>
-        `;
+            <button class="btn" style="background:#27ae60;color:#fff;" onclick="moveTicket(${index})">Log</button>
+            <button class="btn delete-btn" style="background:#e74c3c;color:#fff;" onclick="deleteMain(${index})">Delete</button>
+        </td>
+    `;
+
                 mainTable.appendChild(row);
+
+                if (canEditTime) {
+                    const hoursCell = document.getElementById(`main-hours-cell-${index}`);
+                    hoursCell.style.cursor = 'pointer';
+                    hoursCell.title = 'Click để sửa giờ';
+                    hoursCell.addEventListener('click', () => editMainTime(index));
+                }
             });
+
+
             const summaryData = {};
             mainData.forEach(item => {
                 const assetType = item.assetType;
@@ -672,24 +696,43 @@
                 row.id = `correction-row-${item.id}`;
                 const logStatus = isLogged(item.id) ? 'Logged' : 'Not logged';
                 const logStatusClass = isLogged(item.id) ? 'logged' : 'not-logged';
+
                 row.innerHTML = `
             <td>${item.id}</td>
             <td>${item.assetType || 'N/A'}</td>
-            <td>
-                <input type="text" 
-                    id="edit-correction-hours-input-${item.id}" 
-                    value="${item.hours || ''}" 
-                    style="width: 60px;" 
-                    onblur="saveCorrectionTime('${item.id}')">
-            </td>
-            <td>
-                <button class="btn" onclick="saveCorrectionTime('${item.id}')">Save</button>
-            </td>
-             <td class="${logStatusClass}">${logStatus}</td> 
+            <td id="fix-time" onclick="editCorrectionCell(this, '${item.id}')" data-id="${item.id}">${item.hours || ''}</td>
+            <td class="${logStatusClass}">${logStatus}</td>
         `;
                 correctionTableBody.appendChild(row);
             });
         }
+        function editCorrectionCell(td, id) {
+            const currentValue = td.textContent.trim();
+
+            if (td.querySelector('input')) return; 
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentValue;
+            input.style.width = '60px';
+
+            input.onblur = () => {
+                const newValue = input.value.trim();
+                saveCorrectionTime(id, newValue);
+            };
+
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    input.blur();
+                }
+            };
+
+            td.innerHTML = '';
+            td.appendChild(input);
+            input.focus();
+        }
+
+
         function addIdToCorrectionTable() {
             const idInput = document.getElementById('idsInput').value.trim();
             if (!idInput) {
@@ -736,20 +779,26 @@
         document.addEventListener('DOMContentLoaded', function () {
             populateCorrectionTable();
         });
-        function saveCorrectionTime(id) {
-            const input = document.getElementById(`edit-correction-hours-input-${id}`);
+        function saveCorrectionTime(id, newValue = null) {
+            const input = newValue !== null
+                ? { value: newValue }
+                : document.querySelector(`#correction-row-${id} td:nth-child(3) input`);
+
             if (!input) return;
-            const newHours = input.value.trim();
-            const floatHours = parseHMtoFloat(newHours);
-            if (newHours === '' || isNaN(floatHours) || floatHours < 0) {
+
+            const hoursStr = input.value.trim();
+            const floatHours = parseHMtoFloat(hoursStr);
+            if (hoursStr === '' || isNaN(floatHours) || floatHours < 0) {
                 alert("Please enter a valid non-negative number for hours (format h:mm).");
                 return;
             }
+
             const entry = correctionData.find(item => item.id === id);
             if (entry) {
-                entry.hours = newHours;
+                entry.hours = hoursStr;
             }
-            populateCorrectionTable();
+
+            populateCorrectionTable(); 
             saveData();
         }
         function deleteLoggedGroup(indexes) {
@@ -792,12 +841,40 @@
         function editMainTime(index) {
             const hoursCell = document.getElementById(`main-hours-cell-${index}`);
             const currentHours = mainData[index].hours || '';
-            hoursCell.innerHTML = `
-        <input type="text" id="edit-main-hours-input-${index}" value="${currentHours}" style="width: 60px;">
-        <button class="btn" onclick="saveMainTime(${index})">Save</button>
-        <button class="btn" onclick="renderTables()">Cancel</button>
-    `;
+
+            if (hoursCell.querySelector('input')) return;
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentHours;
+            input.style.width = '100%';
+            input.style.boxSizing = 'border-box';
+            input.style.font = 'inherit';
+            input.style.padding = '2px 4px';
+
+            input.onblur = () => {
+                const newHours = input.value.trim();
+                const floatHours = parseHMtoFloat(newHours);
+                if (newHours === '' || isNaN(floatHours) || floatHours < 0) {
+                    alert("Please enter a valid non-negative number for hours (format h:mm).");
+                    renderTables();
+                    return;
+                }
+                mainData[index].hours = newHours;
+                saveData();
+                renderTables();
+            };
+
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') input.blur();
+            };
+
+            hoursCell.innerHTML = '';
+            hoursCell.appendChild(input);
+            input.focus();
+            input.select();
         }
+
         document.getElementById('ticketCount').addEventListener('input', function (e) {
             this.value = this.value.replace(/[^0-9]/g, '');
         });
@@ -817,12 +894,40 @@
         function editTime(index) {
             const hoursCell = document.getElementById(`hours-cell-${index}`);
             const currentHours = loggedData[index].hours || '';
-            hoursCell.innerHTML = `
-        <input type="text" id="edit-hours-input-${index}" value="${currentHours}" style="width: 60px;">
-        <button class="btn" onclick="saveTime(${index})">Save</button>
-        <button class="btn" onclick="renderTables()">Cancel</button>
-    `;
+
+            if (hoursCell.querySelector('input')) return;
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentHours;
+            input.style.width = '100%';
+            input.style.boxSizing = 'border-box';
+            input.style.font = 'inherit';
+            input.style.padding = '2px 4px';
+
+            input.onblur = () => {
+                const newHours = input.value.trim();
+                const floatHours = parseHMtoFloat(newHours);
+                if (newHours === '' || isNaN(floatHours) || floatHours < 0) {
+                    alert("Please enter a valid non-negative number for hours (format h:mm).");
+                    renderTables();
+                    return;
+                }
+                loggedData[index].hours = newHours;
+                saveData();
+                renderTables();
+            };
+
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') input.blur();
+            };
+
+            hoursCell.innerHTML = '';
+            hoursCell.appendChild(input);
+            input.focus();
+            input.select();
         }
+
         function saveTime(index) {
             const input = document.getElementById(`edit-hours-input-${index}`);
             if (!input) return;
