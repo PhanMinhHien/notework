@@ -24,6 +24,17 @@
             color: #2980b9;
         }
 
+        /* Màu sắc cho trạng thái */
+        .not-logged {
+            color: red;
+            /* Màu đỏ cho 'Not logged' */
+        }
+
+        .logged {
+            color: green;
+            /* Màu xanh cho 'Logged' */
+        }
+
         h3 {
             color: #444;
             margin-top: 30px;
@@ -159,7 +170,8 @@
         #ticketsSection,
         #timesheetSection,
         #backupRestoreSection,
-        #worktimeSection {
+        #worktimeSection,
+        #correctionSection {
             max-width: 80%;
             margin: auto;
             margin-bottom: 40px;
@@ -216,10 +228,10 @@
 
             #ticketsSection,
             #timesheetSection,
-            #worktimeSection {
+            #worktimeSection,
+            #correctionSection {
                 padding: 10px;
             }
-
         }
 
         #popupCheckboxes label {
@@ -283,6 +295,27 @@
             <tbody></tbody>
         </table>
     </section>
+    <section id="correctionSection" class="section">
+        <h2>Correction Tickets</h2>
+        <input type="text" id="idsInput" placeholder="Asset ID" />
+        <button onclick="addIdToCorrectionTable()">Add ID</button>
+        <table id="correctionTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Asset Type</th>
+                    <th>Hours</th>
+                    <th>Actions</th>
+                    <th>Log?</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <br>
+        <button onclick="resetCorrrectionTable()" style="background:#e74c3c;color:#fff;" class="btn">Reset
+            Correction</button>
+    </section>
     <section id="timesheetSection" class="section">
         <h2>Timesheet</h2>
         <select id="weekSelector" onchange="filterByWeek()">
@@ -328,8 +361,6 @@
                 <button style="background:#e74c3c;color:#fff;" onclick="closePopup()">Discard</button>
             </div>
         </div>
-
-
     </section>
     <section id="worktimeSection" class="section">
         <h2>Work Time</h2>
@@ -359,11 +390,16 @@
         let mainData = JSON.parse(localStorage.getItem('mainData')) || [];
         let loggedData = JSON.parse(localStorage.getItem('loggedData')) || [];
         let workTimes = JSON.parse(localStorage.getItem('workTimes')) || [];
+        let correctionData = JSON.parse(localStorage.getItem('correctionData')) || [];
+        if (!Array.isArray(correctionData)) {
+            correctionData = [];
+        }
         let editIndex = null;
         function saveData() {
             localStorage.setItem('mainData', JSON.stringify(mainData));
             localStorage.setItem('loggedData', JSON.stringify(loggedData));
             localStorage.setItem('workTimes', JSON.stringify(workTimes));
+            localStorage.setItem('correctionData', JSON.stringify(correctionData));
         }
         function addTicket() {
             const rawAssetIds = document.getElementById('assetId').value.trim();
@@ -428,8 +464,6 @@
                 if (cmpId !== 0) return cmpId;
                 return a.tickets - b.tickets;
             });
-
-
             const mainTable = document.querySelector('#mainTable tbody');
             mainTable.innerHTML = '';
             mainData.forEach((item, index) => {
@@ -604,6 +638,120 @@
                 loggedTable.appendChild(row);
             });
         }
+        function findItemByAssetId(id) {
+            let item = mainData.find(d => {
+                const ids = d.assetId.split(',').map(s => s.trim());
+                return ids.includes(id);
+            });
+            if (item) return item;
+            item = loggedData.find(d => {
+                const ids = d.assetId.split(',').map(s => s.trim());
+                return ids.includes(id);
+            });
+            return item || null;
+        }
+        function isLogged(id) {
+            const isInMainData = mainData.some(d => {
+                const ids = d.assetId.split(',').map(s => s.trim());
+                return ids.includes(id);
+            });
+            if (isInMainData) {
+                return false;
+            }
+            const isInLoggedData = loggedData.some(d => {
+                const ids = d.assetId.split(',').map(s => s.trim());
+                return ids.includes(id);
+            });
+            return isInLoggedData;
+        }
+        function populateCorrectionTable() {
+            const correctionTableBody = document.querySelector('#correctionTable tbody');
+            correctionTableBody.innerHTML = '';
+            correctionData.forEach(item => {
+                const row = document.createElement('tr');
+                row.id = `correction-row-${item.id}`;
+                const logStatus = isLogged(item.id) ? 'Logged' : 'Not logged';
+                const logStatusClass = isLogged(item.id) ? 'logged' : 'not-logged';
+                row.innerHTML = `
+            <td>${item.id}</td>
+            <td>${item.assetType || 'N/A'}</td>
+            <td>
+                <input type="text" 
+                    id="edit-correction-hours-input-${item.id}" 
+                    value="${item.hours || ''}" 
+                    style="width: 60px;" 
+                    onblur="saveCorrectionTime('${item.id}')">
+            </td>
+            <td>
+                <button class="btn" onclick="saveCorrectionTime('${item.id}')">Save</button>
+            </td>
+             <td class="${logStatusClass}">${logStatus}</td> 
+        `;
+                correctionTableBody.appendChild(row);
+            });
+        }
+        function addIdToCorrectionTable() {
+            const idInput = document.getElementById('idsInput').value.trim();
+            if (!idInput) {
+                alert('Vui lòng nhập Asset ID.');
+                return;
+            }
+            const ids = idInput.split(',').map(s => s.trim());
+            ids.forEach(id => {
+                if (!correctionData.some(item => item.id === id)) {
+                    const item = findItemByAssetId(id);
+                    if (item) {
+                        correctionData.push({
+                            id: id,
+                            assetType: item.assetType,
+                            hours: '',
+                        });
+                    }
+                }
+            });
+            populateCorrectionTable();
+            saveData();
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            populateCorrectionTable();
+        });
+        function updateCorrectionHours(assetId, newHours, inputElement) {
+            if (!newHours.match(/^\d{1,2}:\d{2}$/)) {
+                alert("Please enter a valid non-negative number for hours (format h:mm).");
+                return;
+            }
+            const entry = correctionData.find(item => item.id === assetId);
+            if (entry) {
+                entry.hours = newHours;
+                console.log('Correction data updated:', correctionData);
+                inputElement.value = newHours;
+                saveData();
+            }
+        }
+        function removeCorrectionEntry(id) {
+            correctionData = correctionData.filter(item => item.id !== id);
+            populateCorrectionTable();
+            saveData();
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            populateCorrectionTable();
+        });
+        function saveCorrectionTime(id) {
+            const input = document.getElementById(`edit-correction-hours-input-${id}`);
+            if (!input) return;
+            const newHours = input.value.trim();
+            const floatHours = parseHMtoFloat(newHours);
+            if (newHours === '' || isNaN(floatHours) || floatHours < 0) {
+                alert("Please enter a valid non-negative number for hours (format h:mm).");
+                return;
+            }
+            const entry = correctionData.find(item => item.id === id);
+            if (entry) {
+                entry.hours = newHours;
+            }
+            populateCorrectionTable();
+            saveData();
+        }
         function deleteLoggedGroup(indexes) {
             if (!Array.isArray(indexes)) return;
             if (confirm("Are you sure you want to delete all entries in this group?")) {
@@ -756,8 +904,6 @@
             });
             document.getElementById('popupOverlay').style.display = 'flex';
         }
-
-
         function formatInputHours(val) {
             const regex = /^(\d{1,2}):([0-5]\d)$/;
             const match = val.match(regex);
@@ -843,7 +989,6 @@
                 const numberOfDays = Math.floor((today - oneJan) / 86400000);
                 const currentWeekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
                 const weekString = `Week ${currentWeekNumber}`;
-
                 loggedData.push({
                     assetIds: removedEntries.map(e => e.id),
                     assetId: removedEntries.map(e => e.id + (e.tickets > 1 ? `(${e.tickets})` : '')).join(', '),
@@ -854,8 +999,6 @@
                         : undefined,
                     week: weekString
                 });
-
-
             }
             saveData();
             renderTables();
@@ -869,7 +1012,6 @@
                 alert('Please enter a valid Asset ID.');
                 return;
             }
-
             const newParts = value.split(/\s+/).filter(Boolean);
             for (const part of newParts) {
                 const match = part.match(/^(\d+)(?:\((\d+)\))?$/);
@@ -879,7 +1021,6 @@
                 }
                 const id = match[1];
                 const tickets = match[2] ? parseInt(match[2], 10) : 1;
-
                 const existingCheckbox = document.querySelector(`#popupCheckboxes input[value="${id}"]`);
                 if (existingCheckbox) {
                     const currentTickets = parseInt(existingCheckbox.getAttribute('data-tickets'), 10) || 1;
@@ -906,7 +1047,6 @@
             const label = link.closest('label');
             const checkbox = label.querySelector('input[type=checkbox]');
             let tickets = parseInt(checkbox.getAttribute('data-tickets')) || 1;
-
             if (confirm(`Are you sure you want to remove 1 ticket from Asset ID ${id}?`)) {
                 if (tickets > 1) {
                     tickets -= 1;
@@ -917,9 +1057,6 @@
                 }
             }
         }
-
-
-
         function closePopup() {
             document.getElementById('popupOverlay').style.display = 'none';
             editIndex = null;
@@ -1116,7 +1253,8 @@
             const data = {
                 mainData,
                 loggedData,
-                workTimes
+                workTimes,
+                correctionData
             };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -1146,9 +1284,11 @@
                     mainData = importedData.mainData || [];
                     loggedData = importedData.loggedData || [];
                     workTimes = importedData.workTimes || [];
+                    correctionData = importedData.correctionData || [];
                     saveData();
                     renderTables();
                     renderWorkTimeByDay();
+                    populateCorrectionTable();
                     alert("Data has been successfully imported!");
                 } catch (error) {
                     alert("The file is invalid or corrupted.");
@@ -1157,13 +1297,20 @@
             };
             reader.readAsText(file);
         }
-
         function resetLoggedTable() {
             if (confirm("Are you sure you want to delete all data in the Timesheet?")) {
                 loggedData = [];
                 saveData();
                 renderTables();
                 alert("All data in the Timesheet has been deleted.");
+            }
+        }
+        function resetCorrrectionTable() {
+            if (confirm("Are you sure you want to delete all data in the correctionData?")) {
+                correctionData = [];
+                saveData();
+                populateCorrectionTable();
+                alert("All data in the correctionData has been deleted.");
             }
         }
         function resetWorkTimes() {
