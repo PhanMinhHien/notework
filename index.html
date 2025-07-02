@@ -304,6 +304,26 @@
             </thead>
             <tbody></tbody>
         </table>
+        <h3 style="margin-top: 30px;">Catalin Task</h3>
+        <input type="text" id="catalinHourInput" placeholder="Enter hour (h:mm)">
+        <input type="date" id="catalinDateInput" />
+
+        <button onclick="addCatalinTask()">Add Task</button>
+
+        <table id="catalinTable" border="1">
+            <thead>
+                <tr>
+
+                    <th>Hours</th>
+                    <th>Date</th>
+                    <th>Week</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+
     </section>
     <section id="correctionSection" class="section">
         <h2>Correction Tickets</h2>
@@ -388,6 +408,208 @@
         <input type="file" onchange="importData(event)" style="margin-left:10px;" />
     </section>
     <script>
+
+
+
+        function formatDate(dateObj) {
+            const d = new Date(dateObj);
+            const day = d.getDate().toString().padStart(2, '0');
+            const month = (d.getMonth() + 1).toString().padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function convertDateToDMY(isoDate) {
+            const [y, m, d] = isoDate.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        function floatToHM(float) {
+            const h = Math.floor(float);
+            const m = Math.round((float - h) * 60);
+            return `${h}:${m.toString().padStart(2, '0')}`;
+        }
+
+        function parseHMtoFloat(hm) {
+            const [h, m] = hm.split(':').map(Number);
+            return h + (m / 60);
+        }
+
+        function getCurrentDay() {
+            const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            return days[new Date().getDay()];
+        }
+
+        function getCurrentWeek() {
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), 0, 1);
+            const pastDays = Math.floor((now - firstDay) / 86400000);
+            return `Week ${Math.ceil((pastDays + firstDay.getDay() + 1) / 7)}`;
+        }
+        function isoToDMY(isoDate) {
+            if (!isoDate) return '';
+            const [y, m, d] = isoDate.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        function addCatalinTask() {
+            const hourInput = document.getElementById('catalinHourInput');
+            const dateInput = document.getElementById('catalinDateInput');
+
+            const val = hourInput.value.trim();
+            const float = parseHMtoFloat(val);
+
+            const dateIso = dateInput.value.trim();
+            if (!dateIso) {
+                alert("Please select a date.");
+                return;
+            }
+            const date = isoToDMY(dateIso);
+
+            if (!val || isNaN(float) || float < 0) {
+                alert("Invalid input. Please enter a valid hour and date.");
+                return;
+            }
+
+            catalinTasks.push({ hours: val, date });
+            saveCatalinData();
+            renderCatalinTasks();
+
+            hourInput.value = '';
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateInput = document.getElementById('catalinDateInput');
+            if (dateInput) {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                dateInput.value = `${yyyy}-${mm}-${dd}`;
+            }
+
+            loadCatalinData();
+            renderCatalinTasks();
+        });
+
+
+        function getWeekFromDate(dateStr) {
+            const [d, m, y] = dateStr.split('/').map(Number);
+            const date = new Date(y, m - 1, d);
+            const firstDay = new Date(y, 0, 1);
+            const pastDays = Math.floor((date - firstDay) / 86400000);
+            const weekNum = Math.ceil((pastDays + firstDay.getDay() + 1) / 7);
+            return `Week ${weekNum}`;
+        }
+
+        function loadCatalinData() {
+            const saved = localStorage.getItem('catalinTasks');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed)) {
+                        catalinTasks = parsed.filter(item => item && item.date && item.hours);
+                    }
+                } catch (e) {
+                    console.error("Lỗi khi đọc localStorage catalinTasks:", e);
+                    localStorage.removeItem('catalinTasks');
+                }
+            }
+        }
+
+
+        function editCatalinHoursCell(td, date) {
+            const current = td.textContent.trim();
+
+            if (td.querySelector('input')) return;
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = current;
+            input.style.width = '60px';
+
+            input.onblur = () => {
+                const val = input.value.trim();
+                const float = parseHMtoFloat(val);
+                if (val === '' || isNaN(float) || float < 0) {
+                    alert("Please enter a valid non-negative number for hours (format h:mm).");
+                    renderCatalinTasks();
+                    return;
+                }
+
+                const sameDateTasks = catalinTasks.filter(t => t.date === date);
+                const evenSplit = float / sameDateTasks.length;
+
+                sameDateTasks.forEach(t => {
+                    t.hours = floatToHM(evenSplit);
+                });
+                saveCatalinData();
+                renderCatalinTasks();
+            };
+
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') input.blur();
+            };
+
+            td.innerHTML = '';
+            td.appendChild(input);
+            input.focus();
+        }
+
+        function deleteCatalinDate(date) {
+            if (!confirm(`Are you sure you want to delete all entries for ${date}?`)) {
+                return;
+            }
+
+            catalinTasks = catalinTasks.filter(t => t.date !== date);
+            saveCatalinData();
+            renderCatalinTasks();
+        }
+
+        function renderCatalinTasks() {
+            const tbody = document.querySelector('#catalinTable tbody');
+            tbody.innerHTML = '';
+
+            const grouped = {};
+            catalinTasks.forEach(task => {
+                if (!grouped[task.date]) {
+                    grouped[task.date] = 0;
+                }
+                grouped[task.date] += parseHMtoFloat(task.hours);
+            });
+
+            const sortedDates = Object.keys(grouped).sort((a, b) => {
+                const [d1, m1, y1] = a.split('/').map(Number);
+                const [d2, m2, y2] = b.split('/').map(Number);
+                return new Date(y2, m2 - 1, d2) - new Date(y1, m1 - 1, d1);
+            });
+
+            sortedDates.forEach((date, index) => {
+                const row = document.createElement('tr');
+                const totalHours = floatToHM(grouped[date]);
+                const week = getWeekFromDate(date);
+
+                row.innerHTML = `
+            <td id="catalin-hours-${index}" onclick="editCatalinHoursCell(this, '${date}')" style="cursor:pointer;">${totalHours}</td>
+            <td>${date}</td>
+            <td>${week}</td>
+            <td><button onclick="deleteCatalinDate('${date}')">Delete</button></td>
+        `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function saveCatalinData() {
+            localStorage.setItem('catalinTasks', JSON.stringify(catalinTasks));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCatalinData();
+            renderCatalinTasks();
+        });
+
+
+
+
         const assetTypesRequireHours = [
             "Web content editing",
             "Graphics Production",
@@ -400,6 +622,8 @@
         let loggedData = JSON.parse(localStorage.getItem('loggedData')) || [];
         let workTimes = JSON.parse(localStorage.getItem('workTimes')) || [];
         let correctionData = JSON.parse(localStorage.getItem('correctionData')) || [];
+        let catalinTasks = JSON.parse(localStorage.getItem('catalinTasks')) || [];
+
         if (!Array.isArray(correctionData)) {
             correctionData = [];
         }
@@ -409,6 +633,7 @@
             localStorage.setItem('loggedData', JSON.stringify(loggedData));
             localStorage.setItem('workTimes', JSON.stringify(workTimes));
             localStorage.setItem('correctionData', JSON.stringify(correctionData));
+            localStorage.setItem('catalinTasks', JSON.stringify(catalinTasks));
         }
         function addTicket() {
             const rawAssetIds = document.getElementById('assetId').value.trim();
@@ -1356,7 +1581,8 @@
                 mainData,
                 loggedData,
                 workTimes,
-                correctionData
+                correctionData,
+                catalinTasks
             };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -1387,10 +1613,12 @@
                     loggedData = importedData.loggedData || [];
                     workTimes = importedData.workTimes || [];
                     correctionData = importedData.correctionData || [];
+                    catalinTasks = importedData.catalinTasks || [];
                     saveData();
                     renderTables();
                     renderWorkTimeByDay();
                     populateCorrectionTable();
+                    renderCatalinTasks()
                     alert("Data has been successfully imported!");
                 } catch (error) {
                     alert("The file is invalid or corrupted.");
