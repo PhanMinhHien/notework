@@ -308,7 +308,7 @@
         <input type="text" id="catalinHourInput" placeholder="Enter hour (h:mm)">
         <input type="date" id="catalinDateInput" />
 
-        <button onclick="addCatalinTask()">Add Task</button>
+        <button onclick="addCatalinTask()" style="background:#000000;color:#fff;">Add Time</button>
 
         <table id="catalinTable" border="1">
             <thead>
@@ -328,7 +328,7 @@
     <section id="correctionSection" class="section">
         <h2>Correction Tickets</h2>
         <input type="text" id="idsInput" placeholder="Asset ID" />
-        <button onclick="addIdToCorrectionTable()">Add ID</button>
+        <button onclick="addIdToCorrectionTable()" style="background:#000000;color:#fff;">Add ID</button>
         <table id="correctionTable">
             <thead>
                 <tr>
@@ -592,7 +592,7 @@
             <td id="catalin-hours-${index}" onclick="editCatalinHoursCell(this, '${date}')" style="cursor:pointer;">${totalHours}</td>
             <td>${date}</td>
             <td>${week}</td>
-            <td><button onclick="deleteCatalinDate('${date}')">Delete</button></td>
+            <td><button onclick="deleteCatalinDate('${date}')" style="background:#e74c3c;color:#fff;">Delete</button></td>
         `;
                 tbody.appendChild(row);
             });
