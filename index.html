@@ -247,39 +247,99 @@
         #mainTable th:nth-last-of-type(2) {
             width: 180px;
         }
+
+        .ticket-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .ticket-left,
+        .ticket-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .ticket-left input,
+        .ticket-left select,
+        .ticket-left button {
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            min-width: 150px;
+            height: 38px;
+        }
+
+        .ticket-left button {
+            background: #000;
+            color: #fff;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .ticket-left button:hover {
+            background: #333;
+        }
+
+        .ticket-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .week-selector {
+            min-width: 120px;
+            height: 38px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
     </style>
 </head>
 
 <body>
     <section id="ticketsSection" class="section">
         <h2>Tickets</h2>
-        <div>
-            <input type="text" id="assetId" placeholder="Asset IDs" oninput="autoCountTickets()" />
-            <select id="assetType" onchange="toggleHourInput()">
-                <option value="">-- Select Asset Type --</option>
-                <option>Article page creation</option>
-                <option>Article page versioning</option>
-                <option>Banner release</option>
-                <option>Dynamic Banner Creation</option>
-                <option>Dynamic Banner Versioning</option>
-                <option>Graphics Production</option>
-                <option>Landing page creation</option>
-                <option>Landing page versioning</option>
-                <option>Newsletter creation</option>
-                <option>Newsletter repetition</option>
-                <option>Newsletter versioning</option>
-                <option>PDF production & editing request</option>
-                <option>Print material design request</option>
-                <option>Static Banner Creation</option>
-                <option>Static Banner Versioning</option>
-                <option>TODAY Newsletter</option>
-                <option>Teaser creation</option>
-                <option>Video creation, editing & upload request</option>
-                <option>Web content editing</option>
-            </select>
-            <input type="text" readonly id="ticketCount" style="background:#f2f2f2;" placeholder="Amount of Assets" />
-            <input type="text" id="hours" placeholder="Working Hours" style="display:none;" />
-            <button onclick="addTicket()" style="background:#000000;color:#fff;">Add Ticket</button>
+        <div class="ticket-row">
+            <div class="ticket-left">
+                <input type="text" id="assetId" placeholder="Asset IDs" oninput="autoCountTickets()" />
+                <select id="assetType" onchange="toggleHourInput()">
+                    <option value="">-- Select Asset Type --</option>
+                    <option>Article page creation</option>
+                    <option>Article page versioning</option>
+                    <option>Banner release</option>
+                    <option>Dynamic Banner Creation</option>
+                    <option>Dynamic Banner Versioning</option>
+                    <option>Graphics Production</option>
+                    <option>Landing page creation</option>
+                    <option>Landing page versioning</option>
+                    <option>Newsletter creation</option>
+                    <option>Newsletter repetition</option>
+                    <option>Newsletter versioning</option>
+                    <option>PDF production & editing request</option>
+                    <option>Print material design request</option>
+                    <option>Static Banner Creation</option>
+                    <option>Static Banner Versioning</option>
+                    <option>TODAY Newsletter</option>
+                    <option>Teaser creation</option>
+                    <option>Video creation, editing & upload request</option>
+                    <option>Web content editing</option>
+                </select>
+                <input type="text" readonly id="ticketCount" style="background:#f2f2f2;"
+                    placeholder="Amount of Assets" />
+                <input type="text" id="hours" placeholder="Working Hours" style="display:none;" />
+                <button onclick="addTicket()" style="background:#000000;color:#fff;">Add Ticket</button>
+            </div>
+            <div class="ticket-right">
+                <label class="ticket-label" for="weekSelectorToLog">Week to log:</label>
+                <select id="weekSelectorToLog" class="week-selector">
+                </select>
+            </div>
+        </div>
         </div>
         <table id="mainTable">
             <thead>
@@ -307,28 +367,27 @@
         <h3 style="margin-top: 30px;">Catalin Task</h3>
         <input type="text" id="catalinHourInput" placeholder="Enter hour (h:mm)">
         <input type="date" id="catalinDateInput" />
-
-        <button onclick="addCatalinTask()" style="background:#000000;color:#fff;">Add Time</button>
-
-        <table id="catalinTable" border="1">
+        <button onclick="addCatalinTask()">Add Task</button>
+        <table id="catalinTable">
             <thead>
                 <tr>
-
-                    <th>Hours</th>
+                    <th>Total Hours</th>
                     <th>Date</th>
                     <th>Week</th>
                     <th>Action</th>
+                    <th>Week Total</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-
-
+        <br>
+        <button onclick="resetCatalinTimes()" style="background:#e74c3c;color:#fff;" class="btn">Reset Catalin
+            Times</button>
     </section>
     <section id="correctionSection" class="section">
         <h2>Correction Tickets</h2>
         <input type="text" id="idsInput" placeholder="Asset ID" />
-        <button onclick="addIdToCorrectionTable()" style="background:#000000;color:#fff;">Add ID</button>
+        <button onclick="addIdToCorrectionTable()">Add ID</button>
         <table id="correctionTable">
             <thead>
                 <tr>
@@ -408,9 +467,21 @@
         <input type="file" onchange="importData(event)" style="margin-left:10px;" />
     </section>
     <script>
-
-
-
+        const logSelector = document.getElementById('weekSelectorToLog');
+        if (logSelector) {
+            const today = new Date();
+            const oneJan = new Date(today.getFullYear(), 0, 1);
+            const numberOfDays = Math.floor((today - oneJan) / 86400000);
+            const currentWeekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
+            logSelector.innerHTML = '';
+            for (let w = currentWeekNumber; w >= currentWeekNumber - 5; w--) {
+                const opt = document.createElement('option');
+                opt.value = `Week ${w}`;
+                opt.textContent = `Week ${w}`;
+                logSelector.appendChild(opt);
+            }
+            logSelector.value = `Week ${currentWeekNumber}`;
+        }
         function formatDate(dateObj) {
             const d = new Date(dateObj);
             const day = d.getDate().toString().padStart(2, '0');
@@ -418,28 +489,23 @@
             const year = d.getFullYear();
             return `${day}/${month}/${year}`;
         }
-
         function convertDateToDMY(isoDate) {
             const [y, m, d] = isoDate.split('-');
             return `${d}/${m}/${y}`;
         }
-
         function floatToHM(float) {
             const h = Math.floor(float);
             const m = Math.round((float - h) * 60);
             return `${h}:${m.toString().padStart(2, '0')}`;
         }
-
         function parseHMtoFloat(hm) {
             const [h, m] = hm.split(':').map(Number);
             return h + (m / 60);
         }
-
         function getCurrentDay() {
             const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
             return days[new Date().getDay()];
         }
-
         function getCurrentWeek() {
             const now = new Date();
             const firstDay = new Date(now.getFullYear(), 0, 1);
@@ -451,30 +517,30 @@
             const [y, m, d] = isoDate.split('-');
             return `${d}/${m}/${y}`;
         }
-
         function addCatalinTask() {
             const hourInput = document.getElementById('catalinHourInput');
             const dateInput = document.getElementById('catalinDateInput');
-
-            const val = hourInput.value.trim();
-            const float = parseHMtoFloat(val);
-
+            let val = hourInput.value.trim();
             const dateIso = dateInput.value.trim();
             if (!dateIso) {
                 alert("Please select a date.");
                 return;
             }
             const date = isoToDMY(dateIso);
-
+            if (!val.includes(':')) {
+                const num = parseFloat(val);
+                if (!isNaN(num)) {
+                    val = `${num}:00`;
+                }
+            }
+            const float = parseHMtoFloat(val);
             if (!val || isNaN(float) || float < 0) {
                 alert("Invalid input. Please enter a valid hour and date.");
                 return;
             }
-
-            catalinTasks.push({ hours: val, date });
-            saveCatalinData();
+            catalinTasks.push({ hours: floatToHM(float), date });
+            saveData();
             renderCatalinTasks();
-
             hourInput.value = '';
         }
         document.addEventListener('DOMContentLoaded', () => {
@@ -486,12 +552,8 @@
                 const dd = String(today.getDate()).padStart(2, '0');
                 dateInput.value = `${yyyy}-${mm}-${dd}`;
             }
-
-            loadCatalinData();
             renderCatalinTasks();
         });
-
-
         function getWeekFromDate(dateStr) {
             const [d, m, y] = dateStr.split('/').map(Number);
             const date = new Date(y, m - 1, d);
@@ -500,116 +562,101 @@
             const weekNum = Math.ceil((pastDays + firstDay.getDay() + 1) / 7);
             return `Week ${weekNum}`;
         }
-
-        function loadCatalinData() {
-            const saved = localStorage.getItem('catalinTasks');
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed)) {
-                        catalinTasks = parsed.filter(item => item && item.date && item.hours);
-                    }
-                } catch (e) {
-                    console.error("Lỗi khi đọc localStorage catalinTasks:", e);
-                    localStorage.removeItem('catalinTasks');
-                }
-            }
-        }
-
-
         function editCatalinHoursCell(td, date) {
             const current = td.textContent.trim();
-
             if (td.querySelector('input')) return;
-
             const input = document.createElement('input');
             input.type = 'text';
             input.value = current;
             input.style.width = '60px';
-
             input.onblur = () => {
-                const val = input.value.trim();
+                let val = input.value.trim();
+                if (/^\d+$/.test(val)) {
+                    val = `${val}:00`;
+                }
                 const float = parseHMtoFloat(val);
                 if (val === '' || isNaN(float) || float < 0) {
                     alert("Please enter a valid non-negative number for hours (format h:mm).");
                     renderCatalinTasks();
                     return;
                 }
-
                 const sameDateTasks = catalinTasks.filter(t => t.date === date);
                 const evenSplit = float / sameDateTasks.length;
-
                 sameDateTasks.forEach(t => {
                     t.hours = floatToHM(evenSplit);
                 });
-                saveCatalinData();
+                saveData();
                 renderCatalinTasks();
             };
-
             input.onkeydown = (e) => {
                 if (e.key === 'Enter') input.blur();
             };
-
             td.innerHTML = '';
             td.appendChild(input);
             input.focus();
         }
-
         function deleteCatalinDate(date) {
             if (!confirm(`Are you sure you want to delete all entries for ${date}?`)) {
                 return;
             }
-
             catalinTasks = catalinTasks.filter(t => t.date !== date);
-            saveCatalinData();
+            saveData();
             renderCatalinTasks();
         }
-
         function renderCatalinTasks() {
             const tbody = document.querySelector('#catalinTable tbody');
             tbody.innerHTML = '';
-
-            const grouped = {};
+            const groupedByDate = {};
+            const groupedByWeek = {};
             catalinTasks.forEach(task => {
-                if (!grouped[task.date]) {
-                    grouped[task.date] = 0;
+                if (!groupedByDate[task.date]) {
+                    groupedByDate[task.date] = 0;
                 }
-                grouped[task.date] += parseHMtoFloat(task.hours);
+                const floatHours = parseHMtoFloat(task.hours);
+                groupedByDate[task.date] += floatHours;
+                const week = getWeekFromDate(task.date);
+                if (!groupedByWeek[week]) groupedByWeek[week] = [];
+                groupedByWeek[week].push({ date: task.date, hours: floatHours });
             });
-
-            const sortedDates = Object.keys(grouped).sort((a, b) => {
-                const [d1, m1, y1] = a.split('/').map(Number);
-                const [d2, m2, y2] = b.split('/').map(Number);
-                return new Date(y2, m2 - 1, d2) - new Date(y1, m1 - 1, d1);
+            const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
+                const getNum = str => parseInt(str.replace(/\D/g, ''));
+                return getNum(b) - getNum(a);
             });
-
-            sortedDates.forEach((date, index) => {
-                const row = document.createElement('tr');
-                const totalHours = floatToHM(grouped[date]);
-                const week = getWeekFromDate(date);
-
-                row.innerHTML = `
-            <td id="catalin-hours-${index}" onclick="editCatalinHoursCell(this, '${date}')" style="cursor:pointer;">${totalHours}</td>
-            <td>${date}</td>
-            <td>${week}</td>
-            <td><button onclick="deleteCatalinDate('${date}')" style="background:#e74c3c;color:#fff;">Delete</button></td>
+            sortedWeeks.forEach(week => {
+                const dates = groupedByWeek[week]
+                    .map(item => item.date)
+                    .filter((value, index, self) => self.indexOf(value) === index)
+                    .sort((a, b) => {
+                        const [d1, m1, y1] = a.split('/').map(Number);
+                        const [d2, m2, y2] = b.split('/').map(Number);
+                        return new Date(y1, m1 - 1, d1) - new Date(y2, m2 - 1, d2);
+                    });
+                let weekTotal = 0;
+                dates.forEach((date, index) => {
+                    const totalHours = floatToHM(groupedByDate[date]);
+                    const floatHours = groupedByDate[date];
+                    weekTotal += floatHours;
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                <td id="catalin-hours-${date}" onclick="editCatalinHoursCell(this, '${date}')" style="cursor:pointer;">${totalHours}</td>
+                <td>${date}</td>
+                <td>${week}</td>
+                <td><button onclick="deleteCatalinDate('${date}')" style="background:#e74c3c;color:#fff;">Delete</button></td>
+                <td></td>
+            `;
+                    tbody.appendChild(row);
+                });
+                const totalRow = document.createElement('tr');
+                totalRow.innerHTML = `
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+             <td style="font-weight:bold; color:#007bff;">${week} Total: ${floatToHM(weekTotal)}</td>
         `;
-                tbody.appendChild(row);
+                tbody.appendChild(totalRow);
             });
         }
-
-        function saveCatalinData() {
-            localStorage.setItem('catalinTasks', JSON.stringify(catalinTasks));
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            loadCatalinData();
-            renderCatalinTasks();
-        });
-
-
-
-
         const assetTypesRequireHours = [
             "Web content editing",
             "Graphics Production",
@@ -623,7 +670,6 @@
         let workTimes = JSON.parse(localStorage.getItem('workTimes')) || [];
         let correctionData = JSON.parse(localStorage.getItem('correctionData')) || [];
         let catalinTasks = JSON.parse(localStorage.getItem('catalinTasks')) || [];
-
         if (!Array.isArray(correctionData)) {
             correctionData = [];
         }
@@ -703,9 +749,7 @@
             mainData.forEach((item, index) => {
                 const canEditTime = assetTypesRequireHours.includes(item.assetType);
                 const hoursDisplay = typeof item.hours === 'string' && item.hours !== '' ? item.hours : '-';
-
                 const row = document.createElement('tr');
-
                 row.innerHTML = `
         <td>${item.assetId}</td>
         <td>${item.assetType}</td>
@@ -720,9 +764,7 @@
             <button class="btn delete-btn" style="background:#e74c3c;color:#fff;" onclick="deleteMain(${index})">Delete</button>
         </td>
     `;
-
                 mainTable.appendChild(row);
-
                 if (canEditTime) {
                     const hoursCell = document.getElementById(`main-hours-cell-${index}`);
                     hoursCell.style.cursor = 'pointer';
@@ -730,8 +772,6 @@
                     hoursCell.addEventListener('click', () => editMainTime(index));
                 }
             });
-
-
             const summaryData = {};
             mainData.forEach(item => {
                 const assetType = item.assetType;
@@ -918,7 +958,6 @@
                 row.id = `correction-row-${item.id}`;
                 const logStatus = isLogged(item.id) ? 'Logged' : 'Not logged';
                 const logStatusClass = isLogged(item.id) ? 'logged' : 'not-logged';
-
                 row.innerHTML = `
             <td>${item.id}</td>
             <td>${item.assetType || 'N/A'}</td>
@@ -930,31 +969,24 @@
         }
         function editCorrectionCell(td, id) {
             const currentValue = td.textContent.trim();
-
             if (td.querySelector('input')) return;
-
             const input = document.createElement('input');
             input.type = 'text';
             input.value = currentValue;
             input.style.width = '60px';
-
             input.onblur = () => {
                 const newValue = input.value.trim();
                 saveCorrectionTime(id, newValue);
             };
-
             input.onkeydown = (e) => {
                 if (e.key === 'Enter') {
                     input.blur();
                 }
             };
-
             td.innerHTML = '';
             td.appendChild(input);
             input.focus();
         }
-
-
         function addIdToCorrectionTable() {
             const idInput = document.getElementById('idsInput').value.trim();
             if (!idInput) {
@@ -1005,21 +1037,17 @@
             const input = newValue !== null
                 ? { value: newValue }
                 : document.querySelector(`#correction-row-${id} td:nth-child(3) input`);
-
             if (!input) return;
-
             const hoursStr = input.value.trim();
             const floatHours = parseHMtoFloat(hoursStr);
             if (hoursStr === '' || isNaN(floatHours) || floatHours < 0) {
                 alert("Please enter a valid non-negative number for hours (format h:mm).");
                 return;
             }
-
             const entry = correctionData.find(item => item.id === id);
             if (entry) {
                 entry.hours = hoursStr;
             }
-
             populateCorrectionTable();
             saveData();
         }
@@ -1063,9 +1091,7 @@
         function editMainTime(index) {
             const hoursCell = document.getElementById(`main-hours-cell-${index}`);
             const currentHours = mainData[index].hours || '';
-
             if (hoursCell.querySelector('input')) return;
-
             const input = document.createElement('input');
             input.type = 'text';
             input.value = currentHours;
@@ -1073,7 +1099,6 @@
             input.style.boxSizing = 'border-box';
             input.style.font = 'inherit';
             input.style.padding = '2px 4px';
-
             input.onblur = () => {
                 const newHours = input.value.trim();
                 const floatHours = parseHMtoFloat(newHours);
@@ -1086,17 +1111,14 @@
                 saveData();
                 renderTables();
             };
-
             input.onkeydown = (e) => {
                 if (e.key === 'Enter') input.blur();
             };
-
             hoursCell.innerHTML = '';
             hoursCell.appendChild(input);
             input.focus();
             input.select();
         }
-
         document.getElementById('ticketCount').addEventListener('input', function (e) {
             this.value = this.value.replace(/[^0-9]/g, '');
         });
@@ -1116,9 +1138,7 @@
         function editTime(index) {
             const hoursCell = document.getElementById(`hours-cell-${index}`);
             const currentHours = loggedData[index].hours || '';
-
             if (hoursCell.querySelector('input')) return;
-
             const input = document.createElement('input');
             input.type = 'text';
             input.value = currentHours;
@@ -1126,7 +1146,6 @@
             input.style.boxSizing = 'border-box';
             input.style.font = 'inherit';
             input.style.padding = '2px 4px';
-
             input.onblur = () => {
                 const newHours = input.value.trim();
                 const floatHours = parseHMtoFloat(newHours);
@@ -1139,17 +1158,14 @@
                 saveData();
                 renderTables();
             };
-
             input.onkeydown = (e) => {
                 if (e.key === 'Enter') input.blur();
             };
-
             hoursCell.innerHTML = '';
             hoursCell.appendChild(input);
             input.focus();
             input.select();
         }
-
         function saveTime(index) {
             const input = document.getElementById(`edit-hours-input-${index}`);
             if (!input) return;
@@ -1390,12 +1406,17 @@
         }
         function moveTicket(index) {
             const item = mainData.splice(index, 1)[0];
-            const today = new Date();
-            const dateString = today.toISOString().split('T')[0];
-            const oneJan = new Date(today.getFullYear(), 0, 1);
-            const numberOfDays = Math.floor((today - oneJan) / 86400000);
-            const weekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
-            const weekString = `Week ${weekNumber}`;
+            const selectedWeek = document.getElementById('weekSelectorToLog')?.value;
+            let weekString;
+            if (selectedWeek && selectedWeek !== '') {
+                weekString = selectedWeek;
+            } else {
+                const today = new Date();
+                const oneJan = new Date(today.getFullYear(), 0, 1);
+                const numberOfDays = Math.floor((today - oneJan) / 86400000);
+                const weekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
+                weekString = `Week ${weekNumber}`;
+            }
             item.week = weekString;
             loggedData.push(item);
             saveData();
@@ -1632,7 +1653,13 @@
                 loggedData = [];
                 saveData();
                 renderTables();
-                alert("All data in the Timesheet has been deleted.");
+            }
+        }
+        function resetCatalinTimes() {
+            if (confirm("Are you sure you want to delete all data in the Catalin Times?")) {
+                catalinTasks = [];
+                saveData();
+                renderCatalinTasks();
             }
         }
         function resetCorrrectionTable() {
@@ -1640,7 +1667,6 @@
                 correctionData = [];
                 saveData();
                 populateCorrectionTable();
-                alert("All data in the correctionData has been deleted.");
             }
         }
         function resetWorkTimes() {
@@ -1648,7 +1674,6 @@
                 workTimes = [];
                 saveData();
                 renderWorkTimeByDay();
-                alert("All work time data has been deleted.");
             }
         }
         document.addEventListener("keydown", function (event) {
