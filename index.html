@@ -331,7 +331,8 @@
                 </select>
                 <input type="text" readonly id="ticketCount" style="background:#f2f2f2;"
                     placeholder="Amount of Assets" />
-                <input type="text" id="hours" placeholder="Working Hours" style="display:none;" />
+                <input type="text" id="hours" placeholder="Working Hours" style="display:none;"
+                    onblur="autoFormatHours()" oninput="autoFormatHours()" />
                 <button onclick="addTicket()" style="background:#000000;color:#fff;">Add Ticket</button>
             </div>
             <div class="ticket-right">
@@ -681,6 +682,29 @@
             localStorage.setItem('correctionData', JSON.stringify(correctionData));
             localStorage.setItem('catalinTasks', JSON.stringify(catalinTasks));
         }
+        function autoFormatHours() {
+            const hoursField = document.getElementById('hours');
+            let value = hoursField.value.trim();
+
+            if (!value) return;
+
+            const parts = value.split(':');
+
+            if (parts.length === 1 && /^\d+$/.test(parts[0])) {
+
+                hoursField.value = `${parseInt(parts[0], 10)}:00`;
+            } else if (parts.length === 2) {
+                let h = parseInt(parts[0], 10);
+                let m = parseInt(parts[1], 10);
+                if (isNaN(h)) h = 0;
+                if (isNaN(m)) m = 0;
+                hoursField.value = `${h}:${m.toString().padStart(2, '0')}`;
+            } else {
+                alert("Invalid time format. Use H or H:MM");
+                hoursField.value = '';
+            }
+        }
+
         function addTicket() {
             const rawAssetIds = document.getElementById('assetId').value.trim();
             const assetType = document.getElementById('assetType').value;
@@ -974,7 +998,23 @@
             input.type = 'text';
             input.value = currentValue;
             input.style.width = '60px';
+            const autoFormat = () => {
+                let value = input.value.trim();
+                if (!value) return;
+
+                const parts = value.split(':');
+                if (parts.length === 1 && /^\d+$/.test(parts[0])) {
+                    input.value = `${parseInt(parts[0], 10)}:00`;
+                } else if (parts.length === 2) {
+                    let h = parseInt(parts[0], 10);
+                    let m = parseInt(parts[1], 10);
+                    if (isNaN(h)) h = 0;
+                    if (isNaN(m)) m = 0;
+                    input.value = `${h}:${m.toString().padStart(2, '0')}`;
+                }
+            };
             input.onblur = () => {
+                autoFormat();
                 const newValue = input.value.trim();
                 saveCorrectionTime(id, newValue);
             };
@@ -1101,7 +1141,23 @@
             input.style.boxSizing = 'border-box';
             input.style.font = 'inherit';
             input.style.padding = '2px 4px';
+            const autoFormat = () => {
+                let value = input.value.trim();
+                if (!value) return;
+
+                const parts = value.split(':');
+                if (parts.length === 1 && /^\d+$/.test(parts[0])) {
+                    input.value = `${parseInt(parts[0], 10)}:00`;
+                } else if (parts.length === 2) {
+                    let h = parseInt(parts[0], 10);
+                    let m = parseInt(parts[1], 10);
+                    if (isNaN(h)) h = 0;
+                    if (isNaN(m)) m = 0;
+                    input.value = `${h}:${m.toString().padStart(2, '0')}`;
+                }
+            };
             input.onblur = () => {
+                autoFormat();
                 const newHours = input.value.trim();
                 const floatHours = parseHMtoFloat(newHours);
                 if (newHours === '' || isNaN(floatHours) || floatHours < 0) {
@@ -1148,7 +1204,23 @@
             input.style.boxSizing = 'border-box';
             input.style.font = 'inherit';
             input.style.padding = '2px 4px';
+            const autoFormat = () => {
+                let value = input.value.trim();
+                if (!value) return;
+
+                const parts = value.split(':');
+                if (parts.length === 1 && /^\d+$/.test(parts[0])) {
+                    input.value = `${parseInt(parts[0], 10)}:00`;
+                } else if (parts.length === 2) {
+                    let h = parseInt(parts[0], 10);
+                    let m = parseInt(parts[1], 10);
+                    if (isNaN(h)) h = 0;
+                    if (isNaN(m)) m = 0;
+                    input.value = `${h}:${m.toString().padStart(2, '0')}`;
+                }
+            };
             input.onblur = () => {
+                autoFormat();
                 const newHours = input.value.trim();
                 const floatHours = parseHMtoFloat(newHours);
                 if (newHours === '' || isNaN(floatHours) || floatHours < 0) {
