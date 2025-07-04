@@ -1083,9 +1083,11 @@
             if (confirm(`Are you sure you want to delete all logs in ${selectedWeek}?`)) {
                 loggedData = loggedData.filter(item => item.week !== selectedWeek);
                 selectedWeek = '';
+                const deleteWeekBtn = document.getElementById('deleteWeekBtn');
+                deleteWeekBtn.style.display = 'none';
+
                 saveData();
                 renderTables();
-                alert(`Logs for ${selectedWeek} have been deleted.`);
             }
         }
         function editMainTime(index) {
