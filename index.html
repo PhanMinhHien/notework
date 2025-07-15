@@ -586,38 +586,46 @@
             return `Week ${weekNum}`;
         }
         function editGrundfosHoursCell(td, date) {
-            const current = td.textContent.trim();
-            if (td.querySelector('input')) return;
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = current;
-            input.style.width = '60px';
-            input.onblur = () => {
-                let val = input.value.trim();
-                if (/^\d+$/.test(val)) {
-                    val = `${val}:00`;
-                }
-                const float = parseHMtoFloat(val);
-                if (val === '' || isNaN(float) || float < 0) {
-                    alert("Please enter a valid non-negative number for hours (format h:mm).");
-                    renderGrundfosTasks();
-                    return;
-                }
-                const sameDateTasks = grundfosTasks.filter(t => t.date === date);
-                const evenSplit = float / sameDateTasks.length;
-                sameDateTasks.forEach(t => {
-                    t.hours = floatToHM(evenSplit);
-                });
-                saveData();
-                renderGrundfosTasks();
-            };
-            input.onkeydown = (e) => {
-                if (e.key === 'Enter') input.blur();
-            };
-            td.innerHTML = '';
-            td.appendChild(input);
-            input.focus();
+    const current = td.textContent.trim();
+    if (td.querySelector('input')) return;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = current;
+    input.style.width = '60px';
+
+    input.onblur = () => {
+        let val = input.value.trim();
+        if (/^\d+$/.test(val)) {
+            val = `${val}:00`;
         }
+        const float = parseHMtoFloat(val);
+        if (val === '' || isNaN(float) || float < 0) {
+            alert("Please enter a valid non-negative number for hours (format h:mm).");
+            renderGrundfosTasks();
+            return;
+        }
+        const row = td.parentElement;
+        const id = row.cells[0].textContent.trim();
+        const task = grundfosTasks.find(t => t.date === date && (t.id || "123") === id);
+
+        if (task) {
+            task.hours = floatToHM(float);
+        }
+
+        saveData();
+        renderGrundfosTasks();
+    };
+
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') input.blur();
+    };
+
+    td.innerHTML = '';
+    td.appendChild(input);
+    input.focus();
+}
+
         function deleteGrundfosDate(date) {
             if (!confirm(`Are you sure you want to delete all entries for ${date}?`)) {
                 return;
@@ -666,7 +674,7 @@
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${task.id || "123"}</td>
-                <td onclick="editgrundfosHoursCell(this, '${task.date}')" style="cursor:pointer;">
+                <td onclick="editGrundfosHoursCell(this, '${task.date}')" style="cursor:pointer;">
                     ${floatToHM(task.hours)}
                 </td>
                 <td>${task.date}</td>
