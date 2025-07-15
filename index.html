@@ -377,7 +377,6 @@
                     <th>Date</th>
                     <th>Week</th>
                     <th>Action</th>
-                    <th>Week Total</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -677,18 +676,23 @@
                         Delete
                     </button>
                 </td>
-                <td></td>
             `;
             tbody.appendChild(row);
         });
 
         const totalRow = document.createElement('tr');
-        totalRow.innerHTML = `
-            <td></td><td></td><td></td><td></td>
-            <td></td>
-            <td style="font-weight:bold; color:#007bff;">${week} Total: ${floatToHM(weekTotal)}</td>
+        totalRow.style.fontWeight = 'bold';
+            totalRow.style.backgroundColor = '#f0f0f0';
+            totalRow.innerHTML = `
+    <td style="text-align:right;" >${week} Total:</td>
+    <td  colspan="4">${floatToHM(weekTotal)}</td>
         `;
         tbody.appendChild(totalRow);
+
+        const spacerRow = document.createElement('tr');
+        spacerRow.style.backgroundColor = '#FFFFFF';
+spacerRow.innerHTML = `<td colspan="6" style="height: 50px;"></td>`;
+tbody.appendChild(spacerRow);
     });
 }
 
