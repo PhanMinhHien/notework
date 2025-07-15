@@ -364,13 +364,15 @@
             </thead>
             <tbody></tbody>
         </table>
-        <h3 style="margin-top: 30px;">Catalin Task</h3>
-        <input type="text" id="catalinHourInput" placeholder="Enter hour (h:mm)">
-        <input type="date" id="catalinDateInput" />
-        <button onclick="addCatalinTask()" style="background:#000000;color:#fff;">Add Task</button>
-        <table id="catalinTable">
+        <h3 style="margin-top: 30px;">Groundfos Task</h3>
+        <input type="text" id="grundfosIdInput" placeholder="Enter ID (optional)">
+        <input type="text" id="grundfosHourInput" placeholder="Enter hour (h:mm)">
+        <input type="date" id="grundfosDateInput" />
+        <button onclick="addGrundfosTask()" style="background:#000000;color:#fff;">Add Task</button>
+        <table id="grundfosTable">
             <thead>
                 <tr>
+                    <th>ID</th>
                     <th>Total Hours</th>
                     <th>Date</th>
                     <th>Week</th>
@@ -381,8 +383,8 @@
             <tbody></tbody>
         </table>
         <br>
-        <button onclick="resetCatalinTimes()" style="background:#e74c3c;color:#fff;" class="btn">Reset Catalin
-            Times</button>
+        <button onclick="resetGrundfosTimes()" style="background:#e74c3c;color:#fff;" class="btn">Reset Groundfos
+            Task</button>
     </section>
     <section id="correctionSection" class="section">
         <h2>Correction Tickets</h2>
@@ -528,34 +530,45 @@
             const [y, m, d] = isoDate.split('-');
             return `${d}/${m}/${y}`;
         }
-        function addCatalinTask() {
-            const hourInput = document.getElementById('catalinHourInput');
-            const dateInput = document.getElementById('catalinDateInput');
-            let val = hourInput.value.trim();
-            const dateIso = dateInput.value.trim();
-            if (!dateIso) {
-                alert("Please select a date.");
-                return;
-            }
-            const date = isoToDMY(dateIso);
-            if (!val.includes(':')) {
-                const num = parseFloat(val);
-                if (!isNaN(num)) {
-                    val = `${num}:00`;
-                }
-            }
-            const float = parseHMtoFloat(val);
-            if (!val || isNaN(float) || float < 0) {
-                alert("Invalid input. Please enter a valid hour and date.");
-                return;
-            }
-            catalinTasks.push({ hours: floatToHM(float), date });
-            saveData();
-            renderCatalinTasks();
-            hourInput.value = '';
+        function addGrundfosTask() {
+    const hourInput = document.getElementById('grundfosHourInput');
+    const dateInput = document.getElementById('grundfosDateInput');
+    const idInput = document.getElementById('grundfosIdInput');
+
+    let val = hourInput.value.trim();
+    const dateIso = dateInput.value.trim();
+    const id = idInput.value.trim() || "123"; 
+
+    if (!dateIso) {
+        alert("Please select a date.");
+        return;
+    }
+
+    const date = isoToDMY(dateIso);
+
+    if (!val.includes(':')) {
+        const num = parseFloat(val);
+        if (!isNaN(num)) {
+            val = `${num}:00`;
         }
+    }
+
+    const float = parseHMtoFloat(val);
+    if (!val || isNaN(float) || float < 0) {
+        alert("Invalid input. Please enter a valid hour and date.");
+        return;
+    }
+
+    grundfosTasks.push({ id, hours: floatToHM(float), date });
+    saveData();
+    renderGrundfosTasks();
+
+    hourInput.value = '';
+    idInput.value = '';
+}
+
         document.addEventListener('DOMContentLoaded', () => {
-            const dateInput = document.getElementById('catalinDateInput');
+            const dateInput = document.getElementById('grundfosDateInput');
             if (dateInput) {
                 const today = new Date();
                 const yyyy = today.getFullYear();
@@ -563,7 +576,7 @@
                 const dd = String(today.getDate()).padStart(2, '0');
                 dateInput.value = `${yyyy}-${mm}-${dd}`;
             }
-            renderCatalinTasks();
+            renderGrundfosTasks();
         });
         function getWeekFromDate(dateStr) {
             const [d, m, y] = dateStr.split('/').map(Number);
@@ -573,7 +586,7 @@
             const weekNum = Math.ceil((pastDays + firstDay.getDay() + 1) / 7);
             return `Week ${weekNum}`;
         }
-        function editCatalinHoursCell(td, date) {
+        function editGrundfosHoursCell(td, date) {
             const current = td.textContent.trim();
             if (td.querySelector('input')) return;
             const input = document.createElement('input');
@@ -588,16 +601,16 @@
                 const float = parseHMtoFloat(val);
                 if (val === '' || isNaN(float) || float < 0) {
                     alert("Please enter a valid non-negative number for hours (format h:mm).");
-                    renderCatalinTasks();
+                    renderGrundfosTasks();
                     return;
                 }
-                const sameDateTasks = catalinTasks.filter(t => t.date === date);
+                const sameDateTasks = grundfosTasks.filter(t => t.date === date);
                 const evenSplit = float / sameDateTasks.length;
                 sameDateTasks.forEach(t => {
                     t.hours = floatToHM(evenSplit);
                 });
                 saveData();
-                renderCatalinTasks();
+                renderGrundfosTasks();
             };
             input.onkeydown = (e) => {
                 if (e.key === 'Enter') input.blur();
@@ -606,68 +619,79 @@
             td.appendChild(input);
             input.focus();
         }
-        function deleteCatalinDate(date) {
+        function deleteGrundfosDate(date) {
             if (!confirm(`Are you sure you want to delete all entries for ${date}?`)) {
                 return;
             }
-            catalinTasks = catalinTasks.filter(t => t.date !== date);
+            grundfosTasks = grundfosTasks.filter(t => t.date !== date);
             saveData();
-            renderCatalinTasks();
+            renderGrundfosTasks();
         }
-        function renderCatalinTasks() {
-            const tbody = document.querySelector('#catalinTable tbody');
-            tbody.innerHTML = '';
-            const groupedByDate = {};
-            const groupedByWeek = {};
-            catalinTasks.forEach(task => {
-                if (!groupedByDate[task.date]) {
-                    groupedByDate[task.date] = 0;
-                }
-                const floatHours = parseHMtoFloat(task.hours);
-                groupedByDate[task.date] += floatHours;
-                const week = getWeekFromDate(task.date);
-                if (!groupedByWeek[week]) groupedByWeek[week] = [];
-                groupedByWeek[week].push({ date: task.date, hours: floatHours });
-            });
-            const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
-                const getNum = str => parseInt(str.replace(/\D/g, ''));
-                return getNum(b) - getNum(a);
-            });
-            sortedWeeks.forEach(week => {
-                const dates = groupedByWeek[week]
-                    .map(item => item.date)
-                    .filter((value, index, self) => self.indexOf(value) === index)
-                    .sort((a, b) => {
-                        const [d1, m1, y1] = a.split('/').map(Number);
-                        const [d2, m2, y2] = b.split('/').map(Number);
-                        return new Date(y1, m1 - 1, d1) - new Date(y2, m2 - 1, d2);
-                    });
-                let weekTotal = 0;
-                dates.forEach((date, index) => {
-                    const totalHours = floatToHM(groupedByDate[date]);
-                    const floatHours = groupedByDate[date];
-                    weekTotal += floatHours;
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                <td id="catalin-hours-${date}" onclick="editCatalinHoursCell(this, '${date}')" style="cursor:pointer;">${totalHours}</td>
-                <td>${date}</td>
+        function renderGrundfosTasks() {
+    const tbody = document.querySelector('#grundfosTable tbody');
+    tbody.innerHTML = '';
+
+    const groupedByDate = {};
+    const groupedByWeek = {};
+
+    grundfosTasks.forEach(task => {
+        if (!groupedByDate[task.date]) {
+            groupedByDate[task.date] = 0;
+        }
+        const floatHours = parseHMtoFloat(task.hours);
+        groupedByDate[task.date] += floatHours;
+
+        const week = getWeekFromDate(task.date);
+        if (!groupedByWeek[week]) groupedByWeek[week] = [];
+        groupedByWeek[week].push({ ...task, hours: floatHours });
+    });
+
+    const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
+        const getNum = str => parseInt(str.replace(/\D/g, ''));
+        return getNum(b) - getNum(a);
+    });
+
+    sortedWeeks.forEach(week => {
+        const tasks = groupedByWeek[week];
+
+        let weekTotal = 0;
+        tasks.sort((a, b) => {
+            const [d1, m1, y1] = a.date.split('/').map(Number);
+            const [d2, m2, y2] = b.date.split('/').map(Number);
+            return new Date(y1, m1 - 1, d1) - new Date(y2, m2 - 1, d2);
+        });
+
+        tasks.forEach(task => {
+            weekTotal += task.hours;
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${task.id || "123"}</td>
+                <td onclick="editgrundfosHoursCell(this, '${task.date}')" style="cursor:pointer;">
+                    ${floatToHM(task.hours)}
+                </td>
+                <td>${task.date}</td>
                 <td>${week}</td>
-                <td><button onclick="deleteCatalinDate('${date}')" style="background:#e74c3c;color:#fff;">Delete</button></td>
+                <td>
+                    <button onclick="deletegrundfosDate('${task.date}')" style="background:#e74c3c;color:#fff;">
+                        Delete
+                    </button>
+                </td>
                 <td></td>
             `;
-                    tbody.appendChild(row);
-                });
-                const totalRow = document.createElement('tr');
-                totalRow.innerHTML = `
+            tbody.appendChild(row);
+        });
+
+        const totalRow = document.createElement('tr');
+        totalRow.innerHTML = `
+            <td></td><td></td><td></td><td></td>
             <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-             <td style="font-weight:bold; color:#007bff;">${week} Total: ${floatToHM(weekTotal)}</td>
+            <td style="font-weight:bold; color:#007bff;">${week} Total: ${floatToHM(weekTotal)}</td>
         `;
-                tbody.appendChild(totalRow);
-            });
-        }
+        tbody.appendChild(totalRow);
+    });
+}
+
         const assetTypesRequireHours = [
             "Web content editing",
             "Graphics Production",
@@ -680,7 +704,7 @@
         let loggedData = JSON.parse(localStorage.getItem('loggedData')) || [];
         let workTimes = JSON.parse(localStorage.getItem('workTimes')) || [];
         let correctionData = JSON.parse(localStorage.getItem('correctionData')) || [];
-        let catalinTasks = JSON.parse(localStorage.getItem('catalinTasks')) || [];
+        let grundfosTasks = JSON.parse(localStorage.getItem('grundfosTasks')) || [];
         if (!Array.isArray(correctionData)) {
             correctionData = [];
         }
@@ -690,7 +714,7 @@
             localStorage.setItem('loggedData', JSON.stringify(loggedData));
             localStorage.setItem('workTimes', JSON.stringify(workTimes));
             localStorage.setItem('correctionData', JSON.stringify(correctionData));
-            localStorage.setItem('catalinTasks', JSON.stringify(catalinTasks));
+            localStorage.setItem('grundfosTasks', JSON.stringify(grundfosTasks));
         }
         function autoFormatHours() {
             const hoursField = document.getElementById('hours');
@@ -738,7 +762,6 @@
                     return;
                 }
 
-                // Tính giờ theo loại asset
                 let hours = null;
                 if (assetType.toLowerCase() === "teaser creation") {
                     const decimalHours = tickets * 0.5;
@@ -1741,7 +1764,7 @@
                 loggedData,
                 workTimes,
                 correctionData,
-                catalinTasks
+                grundfosTasks
             };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -1772,12 +1795,12 @@
                     loggedData = importedData.loggedData || [];
                     workTimes = importedData.workTimes || [];
                     correctionData = importedData.correctionData || [];
-                    catalinTasks = importedData.catalinTasks || [];
+                    grundfosTasks = importedData.grundfosTasks || [];
                     saveData();
                     renderTables();
                     renderWorkTimeByDay();
                     populateCorrectionTable();
-                    renderCatalinTasks()
+                    renderGrundfosTasks()
                     alert("Data has been successfully imported!");
                 } catch (error) {
                     alert("The file is invalid or corrupted.");
@@ -1793,11 +1816,11 @@
                 renderTables();
             }
         }
-        function resetCatalinTimes() {
-            if (confirm("Are you sure you want to delete all data in the Catalin Times?")) {
-                catalinTasks = [];
+        function resetGrundfosTimes() {
+            if (confirm("Are you sure you want to delete all data in the Grundfos Task?")) {
+                grundfosTasks = [];
                 saveData();
-                renderCatalinTasks();
+                renderGrundfosTasks();
             }
         }
         function resetCorrrectionTable() {
