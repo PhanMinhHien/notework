@@ -388,6 +388,7 @@
         <h2>Correction Tickets</h2>
         <input type="text" id="idsInput" placeholder="Asset ID" />
         <button onclick="addIdToCorrectionTable()" style="background:#000000;color:#fff;">Add ID</button>
+
         <table id="correctionTable">
             <thead>
                 <tr>
@@ -399,6 +400,16 @@
             </thead>
             <tbody>
             </tbody>
+        </table>
+        <h3>Summary: Total Hours</h3>
+        <table id="summaryTableCorrection" border="1">
+            <thead>
+                <tr>
+                    <th>Asset Type</th>
+                    <th>Total Hours</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
         </table>
         <br>
         <button onclick="resetCorrrectionTable()" style="background:#e74c3c;color:#fff;" class="btn">Reset
@@ -713,8 +724,7 @@
                 alert("Please enter valid Asset ID(s) and Asset Type.");
                 return;
             }
-            const assetEntries = [];
-            let totalTickets = 0;
+
             for (const part of assetIdParts) {
                 const match = part.match(/^(\d+)(?:\((\d+)\))?$/);
                 if (!match) {
@@ -727,38 +737,42 @@
                     alert(`Ticket count must be positive for asset ID: ${id}`);
                     return;
                 }
-                assetEntries.push({ id, tickets });
-                totalTickets += tickets;
+
+                // Tính giờ theo loại asset
+                let hours = null;
+                if (assetType.toLowerCase() === "teaser creation") {
+                    const decimalHours = tickets * 0.5;
+                    hours = decimalHoursToHM(decimalHours);
+                } else if (assetType.toLowerCase() === "banner release") {
+                    const decimalHours = tickets * 0.25;
+                    hours = decimalHoursToHM(decimalHours);
+                } else {
+                    hours = hoursInput ? formatInputHours(hoursInput) : null;
+                }
+
+                if (assetTypesRequireHours.includes(assetType) && (hours === null)) {
+                    alert("Please enter a valid time in HH:MM format.");
+                    return;
+                }
+
+                mainData.push({
+                    assetId: id,
+                    assetType,
+                    tickets,
+                    hours
+                });
             }
-            let hours = null;
-            if (assetType.toLowerCase() === "teaser creation") {
-                const decimalHours = totalTickets * 0.5;
-                hours = decimalHoursToHM(decimalHours);
-            } else if (assetType.toLowerCase() === "banner release") {
-                const decimalHours = totalTickets * 0.25;
-                hours = decimalHoursToHM(decimalHours);
-            } else {
-                hours = hoursInput ? formatInputHours(hoursInput) : null;
-            }
-            if (assetTypesRequireHours.includes(assetType) && (hours === null)) {
-                alert("Please enter a valid time in HH:MM format for 'Web content editing'.");
-                return;
-            }
-            mainData.push({
-                assetIds: assetEntries.map(e => e.id),
-                assetId: assetEntries.map(e => e.id + (e.tickets > 1 ? `(${e.tickets})` : '')).join(', '),
-                assetType,
-                tickets: totalTickets,
-                hours
-            });
+
             saveData();
             renderTables();
+
             document.getElementById('assetId').value = '';
             document.getElementById('assetType').value = '';
             document.getElementById('ticketCount').value = '';
             document.getElementById('hours').value = '';
             toggleHourInput();
         }
+
         function renderTables() {
             mainData.sort((a, b) => {
                 const cmpType = a.assetType.localeCompare(b.assetType);
@@ -795,10 +809,57 @@
                     hoursCell.addEventListener('click', () => editMainTime(index));
                 }
             });
+
+            const correctionSummaryData = {};
+            correctionData.forEach(item => {
+                const assetType = item.assetType;
+
+                if (!correctionSummaryData[assetType]) {
+                    correctionSummaryData[assetType] = {
+                        assetType: assetType,
+                        totalDecimalHours: 0
+                    };
+                }
+
+                correctionSummaryData[assetType].totalTickets += item.tickets;
+                if (typeof item.hours === 'string') {
+                    correctionSummaryData[assetType].totalDecimalHours += hhmmToDecimalHours(item.hours);
+                }
+            });
+
+            const correctionTableBody = document.querySelector('#summaryTableCorrection tbody');
+            correctionTableBody.innerHTML = '';
+
+            let totalTicketsAll = 0;
+            let totalHoursAll = 0;
+
+            Object.values(correctionSummaryData).forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+        <td>${row.assetType}</td>
+        <td>${row.totalDecimalHours.toFixed(2)}</td>
+    `;
+                correctionTableBody.appendChild(tr);
+
+                totalTicketsAll += row.totalTickets;
+                totalHoursAll += row.totalDecimalHours;
+            });
+
+            const totalRow = document.createElement('tr');
+            totalRow.style.fontWeight = 'bold';
+            totalRow.style.backgroundColor = '#f0f0f0';
+            totalRow.innerHTML = `
+    <td style="text-align:right;">Total</td>
+    <td>${totalHoursAll.toFixed(2)}</td>
+`;
+            correctionTableBody.appendChild(totalRow);
+
+
+
             const summaryData = {};
             mainData.forEach(item => {
                 const assetType = item.assetType;
-                if (!assetTypesRequireHours.includes(assetType)) return;
+                // if (!assetTypesRequireHours.includes(assetType)) return;
                 if (!summaryData[assetType]) {
                     summaryData[assetType] = {
                         assetType: assetType,
@@ -904,7 +965,7 @@
             loggedData.forEach(item => {
                 if (selectedWeek !== "" && item.week !== selectedWeek) return;
                 const assetType = item.assetType;
-                if (!assetTypesRequireHours.includes(assetType)) return;
+                // if (!assetTypesRequireHours.includes(assetType)) return;
                 if (!loggedSummaryData[assetType]) {
                     loggedSummaryData[assetType] = {
                         assetType: assetType,
@@ -1048,6 +1109,7 @@
             document.getElementById('idsInput').value = '';
             populateCorrectionTable();
             saveData();
+            renderTables();
         }
         document.addEventListener('DOMContentLoaded', function () {
             populateCorrectionTable();
@@ -1069,6 +1131,7 @@
             correctionData = correctionData.filter(item => item.id !== id);
             populateCorrectionTable();
             saveData();
+            renderTables();
         }
         document.addEventListener('DOMContentLoaded', function () {
             populateCorrectionTable();
@@ -1090,6 +1153,7 @@
             }
             populateCorrectionTable();
             saveData();
+            renderTables();
         }
         function deleteLoggedGroup(indexes) {
             if (!Array.isArray(indexes)) return;
