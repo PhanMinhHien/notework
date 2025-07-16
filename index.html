@@ -765,23 +765,31 @@
     }
 
     if (assetType.toLowerCase() === "banner release") {
-        const tickets = parseInt(ticketCountInput, 10);
-        if (!tickets || tickets <= 0) {
-            alert("Please enter a valid number of tickets.");
-            return;
-        }
+    const tickets = parseInt(ticketCountInput, 10);
+    if (!tickets || tickets <= 0) {
+        alert("Please enter a valid number of tickets.");
+        return;
+    }
 
-        const decimalHours = tickets * 0.25;
-        const hours = decimalHoursToHM(decimalHours);
+    const decimalHours = tickets * 0.25;
+    const hours = decimalHoursToHM(decimalHours);
 
+    const existingBanner = mainData.find(item => item.assetType.toLowerCase() === "banner release");
+
+    if (existingBanner) {
+        existingBanner.tickets += tickets;
+        const totalDecimalHours = hhmmToDecimalHours(existingBanner.hours) + decimalHours;
+        existingBanner.hours = decimalHoursToHM(totalDecimalHours);
+    } else {
         mainData.push({
-            assetId: '', // không có asset ID
+            assetId: '', 
             assetType,
             tickets,
             hours
         });
-
-    } else {
+    }
+}
+ else {
     if (!assetIdParts.length) {
         alert("Please enter valid Asset ID(s).");
         return;
