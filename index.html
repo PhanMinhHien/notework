@@ -329,7 +329,7 @@
                     <option>Video creation, editing & upload request</option>
                     <option>Web content editing</option>
                 </select>
-                <input type="text" readonly id="ticketCount" style="background:#f2f2f2;"
+                <input type="text" readonly id="ticketCount" style="background-color: #d6d6d6;"
                     placeholder="Amount of Assets" />
                 <input type="text" id="hours" placeholder="Working Hours" style="display:none;" />
                 <button onclick="addTicket()" style="background:#000000;color:#fff;">Add Ticket</button>
@@ -1886,11 +1886,11 @@ document.getElementById('assetType').addEventListener('change', function () {
 
     if (selected === 'banner release') {
         ticketCount.removeAttribute('readonly');
-        ticketCount.placeholder = 'Enter ticket count';
+        ticketCount.style.backgroundColor = 'white';
+
     } else {
         ticketCount.setAttribute('readonly', true);
-        ticketCount.value = ''; // reset khi chuyển loại
-        ticketCount.placeholder = '';
+        ticketCount.style.backgroundColor = '#d6d6d6'; 
     }
 });
 
