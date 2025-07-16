@@ -530,41 +530,41 @@
             return `${d}/${m}/${y}`;
         }
         function addGrundfosTask() {
-    const hourInput = document.getElementById('grundfosHourInput');
-    const dateInput = document.getElementById('grundfosDateInput');
-    const idInput = document.getElementById('grundfosIdInput');
+            const hourInput = document.getElementById('grundfosHourInput');
+            const dateInput = document.getElementById('grundfosDateInput');
+            const idInput = document.getElementById('grundfosIdInput');
 
-    let val = hourInput.value.trim();
-    const dateIso = dateInput.value.trim();
-    const id = idInput.value.trim() || "123"; 
+            let val = hourInput.value.trim();
+            const dateIso = dateInput.value.trim();
+            const id = idInput.value.trim() || "123";
 
-    if (!dateIso) {
-        alert("Please select a date.");
-        return;
-    }
+            if (!dateIso) {
+                alert("Please select a date.");
+                return;
+            }
 
-    const date = isoToDMY(dateIso);
+            const date = isoToDMY(dateIso);
 
-    if (!val.includes(':')) {
-        const num = parseFloat(val);
-        if (!isNaN(num)) {
-            val = `${num}:00`;
+            if (!val.includes(':')) {
+                const num = parseFloat(val);
+                if (!isNaN(num)) {
+                    val = `${num}:00`;
+                }
+            }
+
+            const float = parseHMtoFloat(val);
+            if (!val || isNaN(float) || float < 0) {
+                alert("Invalid input. Please enter a valid hour and date.");
+                return;
+            }
+
+            grundfosTasks.push({ id, hours: floatToHM(float), date });
+            saveData();
+            renderGrundfosTasks();
+
+            hourInput.value = '';
+            idInput.value = '';
         }
-    }
-
-    const float = parseHMtoFloat(val);
-    if (!val || isNaN(float) || float < 0) {
-        alert("Invalid input. Please enter a valid hour and date.");
-        return;
-    }
-
-    grundfosTasks.push({ id, hours: floatToHM(float), date });
-    saveData();
-    renderGrundfosTasks();
-
-    hourInput.value = '';
-    idInput.value = '';
-}
 
         document.addEventListener('DOMContentLoaded', () => {
             const dateInput = document.getElementById('grundfosDateInput');
@@ -586,45 +586,45 @@
             return `Week ${weekNum}`;
         }
         function editGrundfosHoursCell(td, date) {
-    const current = td.textContent.trim();
-    if (td.querySelector('input')) return;
+            const current = td.textContent.trim();
+            if (td.querySelector('input')) return;
 
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = current;
-    input.style.width = '60px';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = current;
+            input.style.width = '60px';
 
-    input.onblur = () => {
-        let val = input.value.trim();
-        if (/^\d+$/.test(val)) {
-            val = `${val}:00`;
+            input.onblur = () => {
+                let val = input.value.trim();
+                if (/^\d+$/.test(val)) {
+                    val = `${val}:00`;
+                }
+                const float = parseHMtoFloat(val);
+                if (val === '' || isNaN(float) || float < 0) {
+                    alert("Please enter a valid non-negative number for hours (format h:mm).");
+                    renderGrundfosTasks();
+                    return;
+                }
+                const row = td.parentElement;
+                const id = row.cells[0].textContent.trim();
+                const task = grundfosTasks.find(t => t.date === date && (t.id || "123") === id);
+
+                if (task) {
+                    task.hours = floatToHM(float);
+                }
+
+                saveData();
+                renderGrundfosTasks();
+            };
+
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') input.blur();
+            };
+
+            td.innerHTML = '';
+            td.appendChild(input);
+            input.focus();
         }
-        const float = parseHMtoFloat(val);
-        if (val === '' || isNaN(float) || float < 0) {
-            alert("Please enter a valid non-negative number for hours (format h:mm).");
-            renderGrundfosTasks();
-            return;
-        }
-        const row = td.parentElement;
-        const id = row.cells[0].textContent.trim();
-        const task = grundfosTasks.find(t => t.date === date && (t.id || "123") === id);
-
-        if (task) {
-            task.hours = floatToHM(float);
-        }
-
-        saveData();
-        renderGrundfosTasks();
-    };
-
-    input.onkeydown = (e) => {
-        if (e.key === 'Enter') input.blur();
-    };
-
-    td.innerHTML = '';
-    td.appendChild(input);
-    input.focus();
-}
 
         function deleteGrundfosDate(date) {
             if (!confirm(`Are you sure you want to delete all entries for ${date}?`)) {
@@ -635,44 +635,44 @@
             renderGrundfosTasks();
         }
         function renderGrundfosTasks() {
-    const tbody = document.querySelector('#grundfosTable tbody');
-    tbody.innerHTML = '';
+            const tbody = document.querySelector('#grundfosTable tbody');
+            tbody.innerHTML = '';
 
-    const groupedByDate = {};
-    const groupedByWeek = {};
+            const groupedByDate = {};
+            const groupedByWeek = {};
 
-    grundfosTasks.forEach(task => {
-        if (!groupedByDate[task.date]) {
-            groupedByDate[task.date] = 0;
-        }
-        const floatHours = parseHMtoFloat(task.hours);
-        groupedByDate[task.date] += floatHours;
+            grundfosTasks.forEach(task => {
+                if (!groupedByDate[task.date]) {
+                    groupedByDate[task.date] = 0;
+                }
+                const floatHours = parseHMtoFloat(task.hours);
+                groupedByDate[task.date] += floatHours;
 
-        const week = getWeekFromDate(task.date);
-        if (!groupedByWeek[week]) groupedByWeek[week] = [];
-        groupedByWeek[week].push({ ...task, hours: floatHours });
-    });
+                const week = getWeekFromDate(task.date);
+                if (!groupedByWeek[week]) groupedByWeek[week] = [];
+                groupedByWeek[week].push({ ...task, hours: floatHours });
+            });
 
-    const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
-        const getNum = str => parseInt(str.replace(/\D/g, ''));
-        return getNum(b) - getNum(a);
-    });
+            const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
+                const getNum = str => parseInt(str.replace(/\D/g, ''));
+                return getNum(b) - getNum(a);
+            });
 
-    sortedWeeks.forEach(week => {
-        const tasks = groupedByWeek[week];
+            sortedWeeks.forEach(week => {
+                const tasks = groupedByWeek[week];
 
-        let weekTotal = 0;
-        tasks.sort((a, b) => {
-            const [d1, m1, y1] = a.date.split('/').map(Number);
-            const [d2, m2, y2] = b.date.split('/').map(Number);
-            return new Date(y1, m1 - 1, d1) - new Date(y2, m2 - 1, d2);
-        });
+                let weekTotal = 0;
+                tasks.sort((a, b) => {
+                    const [d1, m1, y1] = a.date.split('/').map(Number);
+                    const [d2, m2, y2] = b.date.split('/').map(Number);
+                    return new Date(y1, m1 - 1, d1) - new Date(y2, m2 - 1, d2);
+                });
 
-        tasks.forEach(task => {
-            weekTotal += task.hours;
+                tasks.forEach(task => {
+                    weekTotal += task.hours;
 
-            const row = document.createElement('tr');
-            row.innerHTML = `
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
                 <td>${task.id || "123"}</td>
                 <td onclick="editGrundfosHoursCell(this, '${task.date}')" style="cursor:pointer;">
                     ${floatToHM(task.hours)}
@@ -685,24 +685,24 @@
                     </button>
                 </td>
             `;
-            tbody.appendChild(row);
-        });
+                    tbody.appendChild(row);
+                });
 
-        const totalRow = document.createElement('tr');
-        totalRow.style.fontWeight = 'bold';
-            totalRow.style.backgroundColor = '#f0f0f0';
-            totalRow.innerHTML = `
+                const totalRow = document.createElement('tr');
+                totalRow.style.fontWeight = 'bold';
+                totalRow.style.backgroundColor = '#f0f0f0';
+                totalRow.innerHTML = `
     <td style="text-align:right;" >${week} Total:</td>
     <td  colspan="4">${floatToHM(weekTotal)}</td>
         `;
-        tbody.appendChild(totalRow);
+                tbody.appendChild(totalRow);
 
-        const spacerRow = document.createElement('tr');
-        spacerRow.style.backgroundColor = '#FFFFFF';
-spacerRow.innerHTML = `<td colspan="6" style="height: 50px;"></td>`;
-tbody.appendChild(spacerRow);
-    });
-}
+                const spacerRow = document.createElement('tr');
+                spacerRow.style.backgroundColor = '#FFFFFF';
+                spacerRow.innerHTML = `<td colspan="6" style="height: 50px;"></td>`;
+                tbody.appendChild(spacerRow);
+            });
+        }
 
         const assetTypesRequireHours = [
             "Web content editing",
@@ -869,27 +869,30 @@ tbody.appendChild(spacerRow);
             let totalHoursAll = 0;
 
             Object.values(correctionSummaryData).forEach(row => {
+                const hoursDisplay = row.totalDecimalHours > 0
+                    ? decimalHoursToHM(row.totalDecimalHours)
+                    : '-';
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
         <td>${row.assetType}</td>
-        <td>${row.totalDecimalHours.toFixed(2)}</td>
+        <td>${hoursDisplay}</td>
     `;
                 correctionTableBody.appendChild(tr);
 
                 totalTicketsAll += row.totalTickets;
                 totalHoursAll += row.totalDecimalHours;
             });
-
+            const totalHoursDisplay = totalHoursAll > 0
+                ? decimalHoursToHM(totalHoursAll)
+                : '-';
             const totalRow = document.createElement('tr');
             totalRow.style.fontWeight = 'bold';
             totalRow.style.backgroundColor = '#f0f0f0';
             totalRow.innerHTML = `
     <td style="text-align:right;">Total</td>
-    <td>${totalHoursAll.toFixed(2)}</td>
+    <td>${totalHoursDisplay}</td>
 `;
             correctionTableBody.appendChild(totalRow);
-
-
 
             const summaryData = {};
             mainData.forEach(item => {
