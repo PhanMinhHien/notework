@@ -672,9 +672,10 @@
                 <td>${task.date}</td>
                 <td>${week}</td>
                 <td>
-                    <button onclick="deleteGrundfosDate('${task.date}')" style="background:#e74c3c;color:#fff;">
-                        Delete
-                    </button>
+                   <button onclick="deleteGrundfosDate('${task.date}', '${task.id}')" style="background:#e74c3c;color:#fff;">
+    Delete
+</button>
+
                 </td>
             `;
                     tbody.appendChild(row);
@@ -695,15 +696,16 @@
                 tbody.appendChild(spacerRow);
             });
         }
-
-        function deleteGrundfosDate(date) {
-            if (!confirm(`Are you sure you want to delete all entries for ${date}?`)) {
+        function deleteGrundfosDate(date, id) {
+            if (!confirm(`Are you sure you want to delete entry ID: ${id} on ${date}?`)) {
                 return;
             }
-            grundfosTasks = grundfosTasks.filter(t => t.date !== date);
+
+            grundfosTasks = grundfosTasks.filter(t => !(t.date === date && t.id === id));
             saveData();
             renderGrundfosTasks();
         }
+
         const assetTypesRequireHours = [
             "Web content editing",
             "Graphics Production",
