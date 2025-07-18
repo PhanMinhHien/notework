@@ -542,34 +542,91 @@
         </div>
 
         <script>
-            document.addEventListener("input", function (e) {
+            document.addEventListener("keydown", function (e) {
                 const ids = ["hours", "grundfosHourInput", "hourChange", "hourMainChange", "hourCorrectionChange"];
-                if (!ids.includes(e.target.id)) return;
-
-                let raw = e.target.value.replace(/[^0-9]/g, "");
-                if (raw.length < 2) {
-                    e.target.value = raw + ":";
-                    return;
+                if (ids.includes(e.target.id) && e.key === "Enter") {
+                    e.preventDefault();
+                    formatTimeInput(e.target);
                 }
-
-                const minutes = parseInt(raw.slice(-2), 10);
-                const hours = parseInt(raw.slice(0, -2) || "0", 10);
-
-                // Check if minutes > 59 or hours > 24
-                if (minutes > 59) {
-                    alert("Minutes cannot be greater than 59 😉");
-                    e.target.value = "";
-                    return;
-                }
-                if (hours > 24) {
-                    alert("Hours cannot be greater than 24 😅");
-                    e.target.value = "";
-                    return;
-                }
-
-                // Format properly
-                e.target.value = `${hours}:${minutes.toString().padStart(2, "0")}`;
             });
+
+            document.addEventListener(
+                "blur",
+                function (e) {
+                    const ids = ["hours", "grundfosHourInput", "hourChange", "hourMainChange", "hourCorrectionChange"];
+                },
+                true
+            );
+
+            document.addEventListener(
+                "blur",
+                function (e) {
+                    const ids = ["hours", "grundfosHourInput", "hourChange", "hourMainChange", "hourCorrectionChange"];
+                    if (ids.includes(e.target.id)) {
+                        formatTimeInput(e.target);
+                    }
+                },
+                true
+            );
+
+            function formatTimeInput(el) {
+                let raw = el.value.replace(/[^0-9]/g, "");
+                console.log("Raw input:", raw);
+
+                if (raw.length === 0) {
+                    el.value = "";
+                    return;
+                }
+
+                let hoursNum = 0;
+                let minutesNum = 0;
+
+                if (raw.length <= 2) {
+                    hoursNum = parseInt(raw, 10);
+                    minutesNum = 0;
+                } else {
+                    minutesNum = parseInt(raw.slice(-2), 10);
+                    hoursNum = parseInt(raw.slice(0, -2), 10);
+                }
+                console.log("Hours:", hoursNum, "Minutes:", minutesNum);
+
+                if (hoursNum > 24) {
+                    alert("Hours cannot be greater than 24 😅");
+                    el.value = "";
+                    return;
+                }
+                if (minutesNum > 59) {
+                    alert("Minutes cannot be greater than 59 😉");
+                    el.value = "";
+                    return;
+                }
+
+                el.value = `${hoursNum}:${minutesNum.toString().padStart(2, "0")}`;
+            }
+
+            // document.addEventListener("DOMContentLoaded", () => {
+            //     attachTimeInputHandlers();
+            // });
+
+            // function attachTimeInputHandlers() {
+            //     const ids = ["hours", "grundfosHourInput", "hourChange", "hourMainChange", "hourCorrectionChange"];
+
+            //     ids.forEach((id) => {
+            //         const input = document.getElementById(id);
+            //         if (!input) return;
+
+            //         input.addEventListener("keydown", (e) => {
+            //             if (e.key === "Enter") {
+            //                 e.preventDefault();
+            //                 formatTimeInput(e.target);
+            //             }
+            //         });
+
+            //         input.addEventListener("blur", (e) => {
+            //             formatTimeInput(e.target);
+            //         });
+            //     });
+            // }
 
             document.querySelectorAll(".accordion-header").forEach((btn, idx) => {
                 btn.addEventListener("click", () => {
