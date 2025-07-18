@@ -542,6 +542,35 @@
         </div>
 
         <script>
+            document.addEventListener("input", function (e) {
+                const ids = ["hours", "grundfosHourInput", "hourChange", "hourMainChange", "hourCorrectionChange"];
+                if (!ids.includes(e.target.id)) return;
+
+                let raw = e.target.value.replace(/[^0-9]/g, "");
+                if (raw.length < 2) {
+                    e.target.value = raw + ":";
+                    return;
+                }
+
+                const minutes = parseInt(raw.slice(-2), 10);
+                const hours = parseInt(raw.slice(0, -2) || "0", 10);
+
+                // Check if minutes > 59 or hours > 24
+                if (minutes > 59) {
+                    alert("Minutes cannot be greater than 59 😉");
+                    e.target.value = "";
+                    return;
+                }
+                if (hours > 24) {
+                    alert("Hours cannot be greater than 24 😅");
+                    e.target.value = "";
+                    return;
+                }
+
+                // Format properly
+                e.target.value = `${hours}:${minutes.toString().padStart(2, "0")}`;
+            });
+
             document.querySelectorAll(".accordion-header").forEach((btn, idx) => {
                 btn.addEventListener("click", () => {
                     const content = btn.nextElementSibling;
@@ -682,6 +711,7 @@
 
                 const input = document.createElement("input");
                 input.type = "text";
+                input.id = "hourChange";
                 input.value = current;
                 input.style.width = "60px";
 
@@ -953,6 +983,7 @@
                     if (canEditTime) {
                         const hoursCell = document.getElementById(`main-hours-cell-${index}`);
                         hoursCell.style.cursor = "pointer";
+
                         hoursCell.title = "Click to edit";
                         hoursCell.addEventListener("click", () => editMainTime(index));
                     }
@@ -1209,6 +1240,7 @@
                 if (td.querySelector("input")) return;
                 const input = document.createElement("input");
                 input.type = "text";
+                input.id = "hourCorrectionChange";
                 input.value = currentValue;
                 input.style.width = "60px";
                 const autoFormat = () => {
@@ -1353,6 +1385,7 @@
                 if (hoursCell.querySelector("input")) return;
                 const input = document.createElement("input");
                 input.type = "text";
+                input.id = "hourMainChange";
                 input.value = currentHours;
                 input.style.width = "100%";
                 input.style.boxSizing = "border-box";
