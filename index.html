@@ -1048,6 +1048,12 @@
                 });
 
                 const correctionSummaryData = {};
+                correctionData.sort((a, b) => {
+                    const cmpType = a.assetType.localeCompare(b.assetType);
+                    if (cmpType !== 0) return cmpType;
+                    return a.tickets - b.tickets;
+                });
+
                 correctionData.forEach((item) => {
                     const assetType = item.assetType;
                     if (!correctionSummaryData[assetType]) {
@@ -1177,35 +1183,20 @@
                 loggedData.forEach((item, index) => {
                     if (selectedWeek !== "" && item.week !== selectedWeek) return;
                     const assetType = item.assetType;
-                    if (assetTypesRequireHours.includes(assetType)) {
-                        const row = document.createElement("tr");
-                        row.innerHTML = `
-                <td>${cleanId(item.assetId) || "-"}</td>
-                <td>${item.assetType}</td>
-                <td>${item.tickets}</td>
-                <td id="hours-cell-${index}">${typeof item.hours === "string" ? item.hours : "-"}</td>
-                <td>${item.week || "-"}</td>
-                <td>
-                    <button class="btn delete-btn" style="background:#e74c3c;color:#fff;" onclick="deleteLogged(${index})">Delete</button>
-                </td>
-            `;
-                        loggedTable.appendChild(row);
-                    } else {
-                        if (!groupedLoggedData[assetType]) {
-                            groupedLoggedData[assetType] = {
-                                assetIds: [],
-                                assetType: item.assetType,
-                                tickets: 0,
-                                hours: item.hours,
-                                weeks: new Set(),
-                                originalIndexes: [],
-                            };
-                        }
-                        groupedLoggedData[assetType].originalIndexes.push(index);
-                        groupedLoggedData[assetType].tickets += item.tickets;
-                        groupedLoggedData[assetType].assetIds.push(item.assetId);
-                        if (item.week) groupedLoggedData[assetType].weeks.add(item.week);
+                    if (!groupedLoggedData[assetType]) {
+                        groupedLoggedData[assetType] = {
+                            assetIds: [],
+                            assetType: item.assetType,
+                            tickets: 0,
+                            hours: item.hours,
+                            weeks: new Set(),
+                            originalIndexes: [],
+                        };
                     }
+                    groupedLoggedData[assetType].originalIndexes.push(index);
+                    groupedLoggedData[assetType].tickets += item.tickets;
+                    groupedLoggedData[assetType].assetIds.push(item.assetId);
+                    if (item.week) groupedLoggedData[assetType].weeks.add(item.week);
                 });
 
                 const loggedSummaryData = {};
