@@ -67,6 +67,7 @@
                 outline: none;
             }
 
+            label.btn,
             button.btn,
             button {
                 padding: 8px 15px;
@@ -337,6 +338,18 @@
                 padding: 20px;
                 background-color: #f9f9f9;
             }
+            .btn-blue {
+                background-color: #2980b9;
+                color: white;
+            }
+            .btn-green {
+                background-color: #27ae60;
+                color: white;
+            }
+
+            .btn-green:hover {
+                background-color: #1e8449;
+            }
         </style>
     </head>
 
@@ -529,19 +542,23 @@
                 </section>
             </div>
         </div>
-
         <div class="accordion-item">
             <button class="accordion-header">Backup & Restore</button>
             <div class="accordion-content">
                 <section id="backupRestoreSection" class="section">
-                    <!-- <h2>Backup & Restore</h2> -->
-                    <button onclick="exportData()" style="background: #2980b9; color: #fff" class="btn">Export Data</button>
-                    <input type="file" onchange="importData(event)" style="margin-left: 10px" />
+                    <button onclick="exportData()" class="btn btn-blue">Export Data</button>
+
+                    <label for="importFile" class="btn btn-green" style="margin-left: 10px; cursor: pointer"> Import Data </label>
+                    <input type="file" id="importFile" onchange="importData(event)" style="display: none" />
                 </section>
             </div>
         </div>
-
         <script>
+            document.getElementById("weekSelector").addEventListener("change", (e) => {
+                selectedWeek = e.target.value;
+                renderTables();
+            });
+
             document.addEventListener("keydown", function (e) {
                 const ids = ["hours", "grundfosHourInput", "hourChange", "hourMainChange", "hourCorrectionChange"];
                 if (ids.includes(e.target.id) && e.key === "Enter") {
@@ -604,30 +621,6 @@
                 el.value = `${hoursNum}:${minutesNum.toString().padStart(2, "0")}`;
             }
 
-            // document.addEventListener("DOMContentLoaded", () => {
-            //     attachTimeInputHandlers();
-            // });
-
-            // function attachTimeInputHandlers() {
-            //     const ids = ["hours", "grundfosHourInput", "hourChange", "hourMainChange", "hourCorrectionChange"];
-
-            //     ids.forEach((id) => {
-            //         const input = document.getElementById(id);
-            //         if (!input) return;
-
-            //         input.addEventListener("keydown", (e) => {
-            //             if (e.key === "Enter") {
-            //                 e.preventDefault();
-            //                 formatTimeInput(e.target);
-            //             }
-            //         });
-
-            //         input.addEventListener("blur", (e) => {
-            //             formatTimeInput(e.target);
-            //         });
-            //     });
-            // }
-
             document.querySelectorAll(".accordion-header").forEach((btn, idx) => {
                 btn.addEventListener("click", () => {
                     const content = btn.nextElementSibling;
@@ -671,6 +664,14 @@
                 }
                 logSelector.value = `Week ${currentWeekNumber}`;
             }
+            function getCurrentWeekString() {
+                const today = new Date();
+                const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
+                const pastDaysOfYear = (today - firstDayOfYear + 86400000) / 86400000;
+                const weekNumber = Math.ceil(pastDaysOfYear / 7);
+                return `Week ${weekNumber}`;
+            }
+
             function formatDate(dateObj) {
                 const d = new Date(dateObj);
                 const day = d.getDate().toString().padStart(2, "0");
@@ -1046,7 +1047,6 @@
                     }
                 });
 
-                // Correction Summary Table
                 const correctionSummaryData = {};
                 correctionData.forEach((item) => {
                     const assetType = item.assetType;
@@ -1092,7 +1092,6 @@
     `;
                 correctionTableBody.appendChild(totalRow);
 
-                // Summary Table
                 const summaryData = {};
                 mainData.forEach((item) => {
                     const assetType = item.assetType;
@@ -1122,33 +1121,40 @@
                     summaryTableBody.appendChild(row);
                 });
 
-                // Week Selector
                 const selector = document.getElementById("weekSelector");
                 if (selector) {
                     const currentSelection = selectedWeek || "";
+                    const weeksArray = getAvailableWeeks(loggedData);
+                    const currentWeek = getCurrentWeekString();
+
                     selector.innerHTML = '<option value="">-- All week --</option>';
-                    const weeksSet = new Set();
-                    loggedData.forEach((item) => {
-                        if (item.week) weeksSet.add(item.week);
-                    });
-                    const weeksArray = Array.from(weeksSet).sort((a, b) => {
-                        const weekA = parseInt(a.split(" ")[1]);
-                        const weekB = parseInt(b.split(" ")[1]);
-                        return weekA - weekB;
-                    });
+
+                    if (currentSelection === "") {
+                        if (weeksArray.includes(currentWeek)) {
+                            selectedWeek = currentWeek;
+                        } else {
+                            const currentWeekNum = parseInt(currentWeek.split(" ")[1]);
+                            const previousWeeks = weeksArray.filter((w) => parseInt(w.split(" ")[1]) < currentWeekNum);
+                            if (previousWeeks.length > 0) {
+                                selectedWeek = previousWeeks[previousWeeks.length - 1];
+                            } else {
+                                selectedWeek = "";
+                            }
+                        }
+                    }
+
                     weeksArray.forEach((week) => {
                         const option = document.createElement("option");
                         option.value = week;
                         option.textContent = week;
-                        if (week === currentSelection) {
+                        if (week === selectedWeek) {
                             option.selected = true;
-                            selectedWeek = week;
                         }
                         selector.appendChild(option);
                     });
-                    if (currentSelection === "") {
+
+                    if (selectedWeek === "") {
                         selector.value = "";
-                        selectedWeek = "";
                     }
                 }
 
@@ -1198,7 +1204,6 @@
                     }
                 });
 
-                // Logged Summary Table
                 const loggedSummaryData = {};
                 loggedData.forEach((item) => {
                     if (selectedWeek !== "" && item.week !== selectedWeek) return;
@@ -1229,7 +1234,6 @@
                     loggedSummaryTableBody.appendChild(row);
                 });
 
-                // Grouped Display
                 Object.values(groupedLoggedData).forEach((group) => {
                     const cleanedIds = group.assetIds.map((id) => cleanId(id)).filter((id) => id !== "");
                     const displayIds = cleanedIds.length > 0 ? cleanedIds.join(", ") : "-";
@@ -1246,6 +1250,18 @@
             </td>
         `;
                     loggedTable.appendChild(row);
+                });
+            }
+            function getAvailableWeeks(loggedData) {
+                const weeksSet = new Set();
+                loggedData.forEach((item) => {
+                    if (item.week) weeksSet.add(item.week);
+                });
+
+                return Array.from(weeksSet).sort((a, b) => {
+                    const weekA = parseInt(a.split(" ")[1]);
+                    const weekB = parseInt(b.split(" ")[1]);
+                    return weekA - weekB;
                 });
             }
 
@@ -1701,7 +1717,6 @@
                 item.assetId = assetIdStr;
                 item.tickets = totalTickets;
 
-                // Tính lại hours
                 if (item.assetType.toLowerCase() === "teaser creation") {
                     const decimalHours = totalTickets * 0.5;
                     item.hours = decimalHoursToHM(decimalHours);
@@ -1709,9 +1724,6 @@
                     const decimalHours = totalTickets * 0.25;
                     item.hours = decimalHoursToHM(decimalHours);
                 } else {
-                    // Nếu loại khác cần giờ nhập tay hoặc giữ nguyên
-                    // Ví dụ giữ nguyên:
-                    // item.hours = item.hours;
                 }
 
                 saveData();
