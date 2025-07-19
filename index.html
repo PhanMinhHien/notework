@@ -1363,6 +1363,11 @@
                         }
                     }
                 });
+                correctionData.sort((a, b) => {
+                    const cmpType = a.assetType.localeCompare(b.assetType);
+                    if (cmpType !== 0) return cmpType;
+                    return a.tickets - b.tickets;
+                });
                 document.getElementById("idsInput").value = "";
                 populateCorrectionTable();
                 saveData();
