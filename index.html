@@ -656,7 +656,7 @@
                 const numberOfDays = Math.floor((today - oneJan) / 86400000);
                 const currentWeekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
                 logSelector.innerHTML = "";
-                for (let w = currentWeekNumber; w >= currentWeekNumber - 5; w--) {
+                for (let w = currentWeekNumber; w >= currentWeekNumber - 1; w--) {
                     const opt = document.createElement("option");
                     opt.value = `Week ${w}`;
                     opt.textContent = `Week ${w}`;
@@ -1070,17 +1070,19 @@
                 let totalTicketsAll = 0;
                 let totalHoursAll = 0;
 
-                Object.values(correctionSummaryData).forEach((row) => {
-                    const hoursDisplay = row.totalDecimalHours > 0 ? decimalHoursToHM(row.totalDecimalHours) : "-";
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
+                Object.values(correctionSummaryData)
+                    .sort((a, b) => a.assetType.localeCompare(b.assetType))
+                    .forEach((row) => {
+                        const hoursDisplay = row.totalDecimalHours > 0 ? decimalHoursToHM(row.totalDecimalHours) : "-";
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
             <td>${row.assetType}</td>
             <td>${hoursDisplay}</td>
         `;
-                    correctionTableBody.appendChild(tr);
-                    totalTicketsAll += row.totalTickets;
-                    totalHoursAll += row.totalDecimalHours;
-                });
+                        correctionTableBody.appendChild(tr);
+                        totalTicketsAll += row.totalTickets;
+                        totalHoursAll += row.totalDecimalHours;
+                    });
 
                 const totalHoursDisplay = totalHoursAll > 0 ? decimalHoursToHM(totalHoursAll) : "-";
                 const totalRow = document.createElement("tr");
@@ -1110,16 +1112,18 @@
 
                 const summaryTableBody = document.querySelector("#summaryTable tbody");
                 summaryTableBody.innerHTML = "";
-                Object.values(summaryData).forEach((summaryItem) => {
-                    const hoursDisplay = summaryItem.totalDecimalHours > 0 ? decimalHoursToHM(summaryItem.totalDecimalHours) : "-";
-                    const row = document.createElement("tr");
-                    row.innerHTML = `
+                Object.values(summaryData)
+                    .sort((a, b) => a.assetType.localeCompare(b.assetType))
+                    .forEach((summaryItem) => {
+                        const hoursDisplay = summaryItem.totalDecimalHours > 0 ? decimalHoursToHM(summaryItem.totalDecimalHours) : "-";
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
             <td>${summaryItem.assetType}</td>
             <td>${summaryItem.totalTickets}</td>
             <td>${hoursDisplay}</td>
         `;
-                    summaryTableBody.appendChild(row);
-                });
+                        summaryTableBody.appendChild(row);
+                    });
 
                 const selector = document.getElementById("weekSelector");
                 if (selector) {
@@ -1223,23 +1227,27 @@
 
                 const loggedSummaryTableBody = document.querySelector("#loggedSummaryTable tbody");
                 loggedSummaryTableBody.innerHTML = "";
-                Object.values(loggedSummaryData).forEach((summaryItem) => {
-                    const hoursDisplay = summaryItem.totalDecimalHours > 0 ? decimalHoursToHM(summaryItem.totalDecimalHours) : "-";
-                    const row = document.createElement("tr");
-                    row.innerHTML = `
+                Object.values(loggedSummaryData)
+                    .sort((a, b) => a.assetType.localeCompare(b.assetType))
+                    .forEach((summaryItem) => {
+                        const hoursDisplay = summaryItem.totalDecimalHours > 0 ? decimalHoursToHM(summaryItem.totalDecimalHours) : "-";
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
             <td>${summaryItem.assetType}</td>
             <td>${summaryItem.totalTickets}</td>
             <td>${hoursDisplay}</td>
         `;
-                    loggedSummaryTableBody.appendChild(row);
-                });
+                        loggedSummaryTableBody.appendChild(row);
+                    });
 
-                Object.values(groupedLoggedData).forEach((group) => {
-                    const cleanedIds = group.assetIds.map((id) => cleanId(id)).filter((id) => id !== "");
-                    const displayIds = cleanedIds.length > 0 ? cleanedIds.join(", ") : "-";
-                    const weekDisplay = Array.from(group.weeks).join(", ") || "-";
-                    const row = document.createElement("tr");
-                    row.innerHTML = `
+                Object.values(groupedLoggedData)
+                    .sort((a, b) => a.assetType.localeCompare(b.assetType))
+                    .forEach((group) => {
+                        const cleanedIds = group.assetIds.map((id) => cleanId(id)).filter((id) => id !== "");
+                        const displayIds = cleanedIds.length > 0 ? cleanedIds.join(", ") : "-";
+                        const weekDisplay = Array.from(group.weeks).join(", ") || "-";
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
             <td>${displayIds}</td>
             <td>${group.assetType}</td>
             <td>${group.tickets}</td>
@@ -1249,8 +1257,8 @@
                 <button class="btn delete-btn" style="background:#e74c3c;color:#fff;" onclick="deleteLoggedGroup(${JSON.stringify(group.originalIndexes)})">Delete</button>
             </td>
         `;
-                    loggedTable.appendChild(row);
-                });
+                        loggedTable.appendChild(row);
+                    });
             }
             function getAvailableWeeks(loggedData) {
                 const weeksSet = new Set();
