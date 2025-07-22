@@ -25,10 +25,12 @@
 
             .not-logged {
                 color: red;
+                background-color: #ffe0e0;
             }
 
             .logged {
                 color: green;
+                background-color: #e0ffe0;
             }
 
             h3 {
@@ -936,7 +938,11 @@
                     return;
                 }
 
-                if (assetType.toLowerCase() === "banner release") {
+                const isHourly = assetTypesRequireHours.includes(assetType);
+                const isTeaser = assetType.toLowerCase() === "teaser creation";
+                const isBanner = assetType.toLowerCase() === "banner release";
+
+                if (isBanner) {
                     const tickets = parseInt(ticketCountInput, 10);
                     if (!tickets || tickets <= 0) {
                         alert("Please enter a valid number of tickets.");
@@ -960,7 +966,68 @@
                             hours,
                         });
                     }
+                } else if (isTeaser || !isHourly) {
+                    if (!assetIdParts.length) {
+                        alert("Please enter valid Asset ID(s).");
+                        return;
+                    }
+
+                    let totalTickets = 0;
+                    let decimalHours = 0;
+                    const validAssetIds = [];
+
+                    for (const part of assetIdParts) {
+                        const match = part.match(/^(\d+)(?:\((\d+)\))?$/);
+                        if (!match) {
+                            alert(`Invalid asset ID format: ${part}`);
+                            return;
+                        }
+
+                        const id = match[1];
+                        const tickets = match[2] ? parseInt(match[2], 10) : 1;
+                        if (tickets <= 0) {
+                            alert(`Ticket count must be positive: ${part}`);
+                            return;
+                        }
+
+                        totalTickets += tickets;
+                        validAssetIds.push(part);
+
+                        if (isTeaser) {
+                            decimalHours += tickets * 0.5;
+                        }
+                    }
+
+                    const hours = isTeaser ? decimalHoursToHM(decimalHours) : "";
+
+                    const existing = mainData.find((item) => item.assetType === assetType);
+
+                    if (existing) {
+                        existing.tickets += totalTickets;
+
+                        // Gộp assetId mới vào nếu chưa có (ngăn cách bằng ", ")
+                        const currentIds = existing.assetId.split(/,\s*/);
+                        for (const id of validAssetIds) {
+                            if (!currentIds.includes(id)) {
+                                currentIds.push(id);
+                            }
+                        }
+                        existing.assetId = currentIds.join(", ");
+
+                        if (isTeaser) {
+                            const totalDecimal = hhmmToDecimalHours(existing.hours) + decimalHours;
+                            existing.hours = decimalHoursToHM(totalDecimal);
+                        }
+                    } else {
+                        mainData.push({
+                            assetId: validAssetIds.join(", "),
+                            assetType,
+                            tickets: totalTickets,
+                            hours,
+                        });
+                    }
                 } else {
+                    // assetTypesRequireHours → từng ticket riêng
                     if (!assetIdParts.length) {
                         alert("Please enter valid Asset ID(s).");
                         return;
@@ -980,15 +1047,8 @@
                             return;
                         }
 
-                        let hours = null;
-                        if (assetType.toLowerCase() === "teaser creation") {
-                            const decimalHours = tickets * 0.5;
-                            hours = decimalHoursToHM(decimalHours);
-                        } else {
-                            hours = hoursInput ? formatInputHours(hoursInput) : null;
-                        }
-
-                        if (assetTypesRequireHours.includes(assetType) && hours === null) {
+                        const hours = hoursInput ? formatInputHours(hoursInput) : null;
+                        if (hours === null) {
                             alert("Please enter a valid time in HH:MM format.");
                             return;
                         }
@@ -1011,6 +1071,7 @@
                 document.getElementById("hours").value = "";
                 toggleHourInput();
             }
+
             function renderTables() {
                 mainData.sort((a, b) => {
                     const cmpType = a.assetType.localeCompare(b.assetType);
@@ -1045,6 +1106,21 @@
                         hoursCell.title = "Click to edit";
                         hoursCell.addEventListener("click", () => editMainTime(index));
                     }
+                });
+                const correctionTable = document.querySelector("#correctionTable tbody");
+                correctionTable.innerHTML = "";
+                correctionData.forEach((item) => {
+                    const row = document.createElement("tr");
+                    row.id = `correction-row-${item.id}`;
+                    const logStatus = isLogged(item.id) ? "Logged" : "Not logged";
+                    const logStatusClass = isLogged(item.id) ? "logged" : "not-logged";
+                    row.innerHTML = `
+        <td>${item.id}</td>
+        <td>${item.assetType || "N/A"}</td>
+        <td id="fix-time" style="cursor: pointer;" onclick="editCorrectionCell(this, '${item.id}')" data-id="${item.id}">${item.hours || ""}</td>
+        <td class="${logStatusClass}">${logStatus}</td>
+    `;
+                    correctionTable.appendChild(row);
                 });
 
                 const correctionSummaryData = {};
@@ -1290,23 +1366,23 @@
                 });
                 return isInLoggedData;
             }
-            function populateCorrectionTable() {
-                const correctionTableBody = document.querySelector("#correctionTable tbody");
-                correctionTableBody.innerHTML = "";
-                correctionData.forEach((item) => {
-                    const row = document.createElement("tr");
-                    row.id = `correction-row-${item.id}`;
-                    const logStatus = isLogged(item.id) ? "Logged" : "Not logged";
-                    const logStatusClass = isLogged(item.id) ? "logged" : "not-logged";
-                    row.innerHTML = `
-            <td>${item.id}</td>
-            <td>${item.assetType || "N/A"}</td>
-            <td id="fix-time" style="cursor: pointer;" onclick="editCorrectionCell(this, '${item.id}')" data-id="${item.id}">${item.hours || ""}</td>
-            <td class="${logStatusClass}">${logStatus}</td>
-        `;
-                    correctionTableBody.appendChild(row);
-                });
-            }
+            //     function populateCorrectionTable() {
+            //         const correctionTableBody = document.querySelector("#correctionTable tbody");
+            //         correctionTableBody.innerHTML = "";
+            //         correctionData.forEach((item) => {
+            //             const row = document.createElement("tr");
+            //             row.id = `correction-row-${item.id}`;
+            //             const logStatus = isLogged(item.id) ? "Logged" : "Not logged";
+            //             const logStatusClass = isLogged(item.id) ? "logged" : "not-logged";
+            //             row.innerHTML = `
+            //     <td>${item.id}</td>
+            //     <td>${item.assetType || "N/A"}</td>
+            //     <td id="fix-time" style="cursor: pointer;" onclick="editCorrectionCell(this, '${item.id}')" data-id="${item.id}">${item.hours || ""}</td>
+            //     <td class="${logStatusClass}">${logStatus}</td>
+            // `;
+            //             correctionTableBody.appendChild(row);
+            //         });
+            //     }
             function editCorrectionCell(td, id) {
                 const currentValue = td.textContent.trim();
                 if (td.querySelector("input")) return;
@@ -1369,13 +1445,13 @@
                     return a.tickets - b.tickets;
                 });
                 document.getElementById("idsInput").value = "";
-                populateCorrectionTable();
+                // populateCorrectionTable();
                 saveData();
                 renderTables();
             }
-            document.addEventListener("DOMContentLoaded", function () {
-                populateCorrectionTable();
-            });
+            // document.addEventListener("DOMContentLoaded", function () {
+            //     populateCorrectionTable();
+            // });
             function updateCorrectionHours(assetId, newHours, inputElement) {
                 if (!newHours.match(/^\d{1,2}:\d{2}$/)) {
                     alert("Please enter a valid non-negative number for hours (format h:mm).");
@@ -1391,13 +1467,13 @@
             }
             function removeCorrectionEntry(id) {
                 correctionData = correctionData.filter((item) => item.id !== id);
-                populateCorrectionTable();
+                // populateCorrectionTable();
                 saveData();
                 renderTables();
             }
-            document.addEventListener("DOMContentLoaded", function () {
-                populateCorrectionTable();
-            });
+            // document.addEventListener("DOMContentLoaded", function () {
+            //     populateCorrectionTable();
+            // });
             function saveCorrectionTime(id, newValue = null) {
                 const input = newValue !== null ? { value: newValue } : document.querySelector(`#correction-row-${id} td:nth-child(3) input`);
                 if (!input) return;
@@ -1411,7 +1487,7 @@
                 if (entry) {
                     entry.hours = hoursStr;
                 }
-                populateCorrectionTable();
+                // populateCorrectionTable();
                 saveData();
                 renderTables();
             }
@@ -2061,7 +2137,7 @@
                 if (confirm("Are you sure you want to delete all data in the correctionData?")) {
                     correctionData = [];
                     saveData();
-                    populateCorrectionTable();
+                    renderTables();
                 }
             }
             function resetWorkTimes() {
