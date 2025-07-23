@@ -335,6 +335,7 @@
 
         .accordion-content.open {
             max-height: 1000px;
+            overflow-y: scroll;
         }
 
         .section {
@@ -463,6 +464,7 @@
             <section id="GFtask" class="section">
                 <!-- <h2>Groundfos Task</h2> -->
                 <input type="text" id="grundfosIdInput" placeholder="Enter ID (optional)" />
+                <input type="text" id="grundfosNameInput" placeholder="Enter Name (optional)" />
                 <input type="text" id="grundfosHourInput" placeholder="Enter hour (h:mm)" />
                 <input type="date" id="grundfosDateInput" />
                 <button onclick="addGrundfosTask()" style="background: #000000; color: #fff">Add Task</button>
@@ -470,6 +472,7 @@
                     <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Name</th>
                             <th>Total Hours</th>
                             <th>Date</th>
                             <th>Week</th>
@@ -724,9 +727,13 @@
         function addGrundfosTask() {
             const hourInput = document.getElementById("grundfosHourInput");
             const dateInput = document.getElementById("grundfosDateInput");
+            const nameInput = document.getElementById("grundfosNameInput");
+
             const idInput = document.getElementById("grundfosIdInput");
 
             let val = hourInput.value.trim();
+            let name = nameInput.value.trim();
+
             const dateIso = dateInput.value.trim();
             const id = idInput.value.trim() || "3067732 Catalin";
 
@@ -751,11 +758,12 @@
                 return;
             }
 
-            grundfosTasks.push({ id, hours: floatToHM(float), date });
+            grundfosTasks.push({ id, name, hours: floatToHM(float), date });
             saveData();
             renderGrundfosTasks();
 
             hourInput.value = "";
+            nameInput.value = "";
             idInput.value = "";
         }
 
@@ -868,7 +876,8 @@
 
                     const row = document.createElement("tr");
                     row.innerHTML = `
-                <td>${task.id || "123"}</td>
+                <td>${task.id}</td>
+                <td>${task.name || ""}</td>
                 <td onclick="editGrundfosHoursCell(this, '${task.date}')" style="cursor:pointer;">
                     ${floatToHM(task.hours)}
                 </td>
