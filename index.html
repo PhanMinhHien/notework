@@ -460,15 +460,15 @@
             <div class="accordion-content">
                 <section id="GFtask" class="section">
                     <div class="campaign-section">
-                        <h3>Add Campaign</h3>
-                        <input type="text" id="newCampaignId" placeholder="Enter Campaign ID" />
-                        <input type="text" id="newCampaignName" placeholder="Enter Campaign Name" />
-                        <button onclick="addCampaign()">Add Campaign</button>
+                        <h2>Add Campaign</h2>
+                        <input type="text" id="campaignID" placeholder="Enter Campaign ID" />
+                        <input type="text" id="campaignName" placeholder="Enter Campaign Name" />
+                        <button onclick="addCampaign()" style="background: #000000; color: #fff">Add Campaign</button>
                     </div>
                     <div class="task-section">
-                        <h3>Add Grundfos Task</h3>
-                        <select id="campaignSelect">
-                            <option value="">-- Select Campaign --</option>
+                        <h2>Add Grundfos Task</h2>
+<select id="campaignSelectAdd"></select>
+                            <!-- <option value="">-- Select Campaign --</option> -->
                         </select>
                         <input type="text" id="grundfosHourInput" placeholder="Enter hour (h:mm)" />
                         <input type="date" id="grundfosDateInput" />
@@ -499,12 +499,23 @@
                             <tr>
                                 <th>Asset ID</th>
                                 <th>Asset Names</th>
+                                 <th>Week</th>
                                 <th>Total Hours</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
                     <br />
+                    <div style="margin-bottom: 10px">
+                        <button onclick="toggleAllWeeks()" id="toggleWeeksBtn">Show all weeks</button>
+                    </div>
+
+                    <div style="margin-bottom: 10px">
+                        <label>Choose Campaign:</label>
+<select id="campaignSelectDelete"></select>
+                        <button onclick="deleteSelectedCampaign()">Delete campaign</button>
+                    </div>
+
                     <button onclick="resetGrundfosTimes()" style="background: #e74c3c; color: #fff" class="btn">Reset Groundfos Task</button>
                 </section>
             </div>
@@ -740,21 +751,69 @@
                 const [y, m, d] = isoDate.split("-");
                 return `${d}/${m}/${y}`;
             }
-            const campaigns = [];
 
-            function addCampaign() {
-                const id = document.getElementById("newCampaignId").value.trim();
-                const name = document.getElementById("newCampaignName").value.trim();
+            let showAllWeeks = false;
 
-                if (!id) return alert("Campaign ID is required.");
-
-                campaigns.push({ id, name });
-                updateCampaignSelect();
-
-                // Reset input
-                document.getElementById("newCampaignId").value = "";
-                document.getElementById("newCampaignName").value = "";
+            function toggleAllWeeks() {
+                showAllWeeks = !showAllWeeks;
+                document.getElementById("toggleWeeksBtn").innerText = showAllWeeks ? "Hidden the rest weeks" : "Show all weeks";
+                renderGrundfosTasks();
             }
+
+            // const campaigns = [];
+            function deleteCampaign() {
+    const select = document.getElementById("campaignSelectDelete");
+    const campaignID = select.value;
+    if (!campaignID) return;
+
+    if (!confirm(`Bạn có chắc muốn xoá Campaign ID: ${campaignID} không?`)) return;
+
+    // Xoá task có ID trùng
+    grundfosTasks = grundfosTasks.filter(task => task.id !== campaignID);
+
+    // Xoá option khỏi cả hai select
+    ["campaignSelectAdd", "campaignSelectDelete"].forEach(id => {
+        const sel = document.getElementById(id);
+        [...sel.options].forEach((opt, i) => {
+            if (opt.value === campaignID) sel.remove(i);
+        });
+    });
+// Xoá khỏi mảng campaigns
+const index = campaigns.findIndex(c => c.id === campaignID);
+if (index !== -1) campaigns.splice(index, 1);
+localStorage.setItem("campaigns", JSON.stringify(campaigns));
+
+    renderGrundfosTasks();
+}
+
+
+       function addCampaign() {
+    const idInput = document.getElementById("campaignID");
+    const nameInput = document.getElementById("campaignName");
+    const id = idInput.value.trim();
+    const name = nameInput.value.trim();
+
+    if (!id) return;
+
+    // 1. Thêm vào mảng campaigns
+    campaigns.push({ id, name });
+
+    // 2. Thêm vào 2 select
+    const option1 = new Option(`${id} - ${name}`, id);
+    const option2 = new Option(`${id} - ${name}`, id);
+
+    document.getElementById("campaignSelectAdd").appendChild(option1);
+    document.getElementById("campaignSelectDelete").appendChild(option2);
+
+    // 3. Reset input
+    idInput.value = "";
+    nameInput.value = "";
+
+    // 4. Lưu vào localStorage
+    localStorage.setItem("campaigns", JSON.stringify(campaigns));
+}
+
+
 
             function updateCampaignSelect() {
                 const select = document.getElementById("campaignSelect");
@@ -870,130 +929,137 @@
                 saveData();
                 renderGrundfosTasks();
             }
-            function renderGrundfosTasks() {
-                const tbody = document.querySelector("#grundfosTable tbody");
-                tbody.innerHTML = "";
-
-                const groupedByDate = {};
-                const groupedByWeek = {};
-
-                grundfosTasks.forEach((task) => {
-                    if (!groupedByDate[task.date]) {
-                        groupedByDate[task.date] = 0;
-                    }
-                    const floatHours = parseHMtoFloat(task.hours);
-                    groupedByDate[task.date] += floatHours;
-
-                    const week = getWeekFromDate(task.date);
-                    if (!groupedByWeek[week]) groupedByWeek[week] = [];
-                    groupedByWeek[week].push({ ...task, hours: floatHours });
+            function renderGrundfosCampaignSelect() {
+                const select = document.getElementById("campaignSelect");
+                select.innerHTML = `<option value="">-- Select Campaign --</option>`;
+                grundfosCampaigns.forEach((c) => {
+                    const opt = document.createElement("option");
+                    opt.value = c.id;
+                    opt.text = `${c.id} - ${c.name}`;
+                    select.appendChild(opt);
                 });
+            }
 
-                const currentWeek = getWeekFromDate(new Date().toLocaleDateString("en-GB"));
-                // const currentWeekNum = parseInt(currentWeek.replace(/\D/g, ""));
+           function renderGrundfosTasks() {
+    const tbody = document.querySelector("#grundfosTable tbody");
+    tbody.innerHTML = "";
+    const summaryBody = document.querySelector("#gfTaskSummaryTable tbody");
+    summaryBody.innerHTML = "";
 
-                const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
-                    return b.localeCompare(a);
-                });
+    const groupedByWeek = {};
 
-                sortedWeeks.forEach((week) => {
-                    const weekNum = parseInt(week.replace(/\D/g, ""));
+    // Nhóm theo tuần
+    grundfosTasks.forEach((task) => {
+        const floatHours = parseHMtoFloat(task.hours);
+        const week = getWeekFromDate(task.date);
+        if (!groupedByWeek[week]) groupedByWeek[week] = [];
+        groupedByWeek[week].push({ ...task, floatHours });
+    });
 
-                    // if (weekNum < currentWeekNum) {
-                    //     return;
-                    // }
+    const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => b.localeCompare(a));
+    const currentWeek = getWeekFromDate(new Date().toLocaleDateString("en-GB"));
 
-                    const tasks = groupedByWeek[week];
-                    let weekTotal = 0;
+    // --- RENDER TASK TABLE ---
+    sortedWeeks.forEach((week) => {
+        if (!showAllWeeks && week !== currentWeek) return;
 
-                    tasks.sort((a, b) => {
-                        const [d1, m1, y1] = a.date.split("/").map(Number);
-                        const [d2, m2, y2] = b.date.split("/").map(Number);
-                        return new Date(y1, m1 - 1, d1) - new Date(y2, m2 - 1, d2);
-                    });
+        const tasks = groupedByWeek[week];
+        let weekTotal = 0;
 
-                    tasks.forEach((task) => {
-                        weekTotal += task.hours;
+        // Sort theo ngày
+        tasks.sort((a, b) => {
+            const [d1, m1, y1] = a.date.split("/").map(Number);
+            const [d2, m2, y2] = b.date.split("/").map(Number);
+            return new Date(y1, m1 - 1, d1) - new Date(y2, m2 - 1, d2);
+        });
 
-                        const row = document.createElement("tr");
-                        row.innerHTML = `
+        // Hiển thị từng task
+        tasks.forEach((task) => {
+            weekTotal += task.floatHours;
+            const row = document.createElement("tr");
+            row.innerHTML = `
                 <td>${task.id}</td>
                 <td>${task.name || ""}</td>
                 <td onclick="editGrundfosHoursCell(this, '${task.date}')" style="cursor:pointer;">
-                    ${floatToHM(task.hours)}
+                    ${floatToHM(task.floatHours)}
                 </td>
                 <td>${task.date}</td>
                 <td>${week}</td>
                 <td>
-                     <button onclick="deleteGrundfosDate('${task.date}', '${task.id}')" style="background:#e74c3c;color:#fff;">
+                    <button onclick="deleteGrundfosDate('${task.date}', '${task.id}')" style="background:#e74c3c;color:#fff;">
                         Delete
                     </button>
                 </td>
             `;
-                        tbody.appendChild(row);
-                    });
-                    const gfTaskSummaryData = {};
+            tbody.appendChild(row);
+        });
 
-                    grundfosTasks.sort((a, b) => {
-                        const cmpID = a.id.localeCompare(b.id);
-                        if (cmpID !== 0) return cmpID;
-                        return a.tickets - b.tickets;
-                    });
-
-                    grundfosTasks.forEach((item) => {
-                        const taskID = item.id;
-                        const taskName = item.name;
-                        if (!gfTaskSummaryData[taskID]) {
-                            gfTaskSummaryData[taskID] = {
-                                id: taskID,
-                                name: taskName || "",
-                                totalTickets: 0,
-                                totalDecimalHours: 0,
-                            };
-                        }
-
-                        gfTaskSummaryData[taskID].totalTickets += item.tickets;
-                        if (typeof item.hours === "string") {
-                            gfTaskSummaryData[taskID].totalDecimalHours += hhmmToDecimalHours(item.hours);
-                        }
-                    });
-
-                    const gfTaskTableBody = document.querySelector("#gfTaskSummaryTable tbody");
-                    gfTaskTableBody.innerHTML = "";
-
-                    let totalTicketsAll = 0;
-                    let totalHoursAll = 0;
-
-                    Object.values(gfTaskSummaryData)
-                        .sort((a, b) => a.id.localeCompare(b.id))
-                        .forEach((row) => {
-                            const hoursDisplay = row.totalDecimalHours > 0 ? decimalHoursToHM(row.totalDecimalHours) : "-";
-                            const tr = document.createElement("tr");
-                            tr.innerHTML = `
-            <td>${row.id}</td>
-             <td>${row.name}</td>
-            <td>${hoursDisplay}</td>
-        `;
-                            gfTaskTableBody.appendChild(tr);
-                            totalTicketsAll += row.totalTickets;
-                            totalHoursAll += row.totalDecimalHours;
-                        });
-
-                    const totalRow = document.createElement("tr");
-                    totalRow.style.fontWeight = "bold";
-                    totalRow.style.backgroundColor = "#f0f0f0";
-                    totalRow.innerHTML = `
-            <td style="text-align:right;" >${week} Total:</td>
+        // Dòng tổng cho tuần
+        const totalRow = document.createElement("tr");
+        totalRow.style.fontWeight = "bold";
+        totalRow.style.backgroundColor = "#f0f0f0";
+        totalRow.innerHTML = `
+            <td style="text-align:right;">${week} Total:</td>
             <td colspan="4">${floatToHM(weekTotal)}</td>
         `;
-                    tbody.appendChild(totalRow);
+        tbody.appendChild(totalRow);
 
-                    const spacerRow = document.createElement("tr");
-                    spacerRow.style.backgroundColor = "#FFFFFF";
-                    spacerRow.innerHTML = `<td colspan="6" style="height: 50px;"></td>`;
-                    tbody.appendChild(spacerRow);
-                });
+        const spacerRow = document.createElement("tr");
+        spacerRow.style.backgroundColor = "#FFFFFF";
+        spacerRow.innerHTML = `<td colspan="6" style="height: 30px;"></td>`;
+        tbody.appendChild(spacerRow);
+    });
+
+    // --- RENDER FULL SUMMARY TABLE ---
+    const allSummary = {};
+
+    Object.entries(groupedByWeek).forEach(([week, tasks]) => {
+        tasks.forEach((task) => {
+            const id = task.id;
+            if (!allSummary[week]) allSummary[week] = {};
+            if (!allSummary[week][id]) {
+                allSummary[week][id] = {
+                    id,
+                    name: task.name || "",
+                    totalDecimalHours: 0,
+                };
             }
+            allSummary[week][id].totalDecimalHours += task.floatHours;
+        });
+    });
+
+    Object.keys(allSummary)
+        .sort((a, b) => b.localeCompare(a))
+        .forEach((week) => {
+            const summaryForWeek = allSummary[week];
+            Object.values(summaryForWeek)
+                .sort((a, b) => a.id.localeCompare(b.id))
+                .forEach((row) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${row.id}</td>
+                        <td>${row.name}</td>
+                        <td>${week}</td>
+                        <td>${decimalHoursToHM(row.totalDecimalHours)}</td>
+                    `;
+                    summaryBody.appendChild(tr);
+                });
+        });
+}
+
+function renderCampaignSelects() {
+    const selects = ["campaignSelectAdd", "campaignSelectDelete"];
+    selects.forEach(selectID => {
+        const select = document.getElementById(selectID);
+        if (select) {
+            select.innerHTML = "";
+            campaigns.forEach(c => {
+                const option = new Option(`${c.id} - ${c.name}`, c.id);
+                select.appendChild(option);
+            });
+        }
+    });
+}
 
             const assetTypesRequireHours = ["Web content editing", "Graphics Production", "PDF production & editing request", "Print material design request", "Video creation, editing & upload request"];
             document.getElementById("workDate").valueAsDate = new Date();
@@ -1002,6 +1068,8 @@
             let workTimes = JSON.parse(localStorage.getItem("workTimes")) || [];
             let correctionData = JSON.parse(localStorage.getItem("correctionData")) || [];
             let grundfosTasks = JSON.parse(localStorage.getItem("grundfosTasks")) || [];
+            let campaigns = JSON.parse(localStorage.getItem("campaigns")) || [];
+
             if (!Array.isArray(correctionData)) {
                 correctionData = [];
             }
@@ -1012,6 +1080,8 @@
                 localStorage.setItem("workTimes", JSON.stringify(workTimes));
                 localStorage.setItem("correctionData", JSON.stringify(correctionData));
                 localStorage.setItem("grundfosTasks", JSON.stringify(grundfosTasks));
+                //   localStorage.setItem("campaigns", JSON.stringify(campaigns));
+
             }
             function autoFormatHours() {
                 const hoursField = document.getElementById("hours");
@@ -2173,6 +2243,8 @@
                 const [h, m] = t.split(":").map(Number);
                 return new Date(0, 0, 0, h, m, 0);
             }
+            renderCampaignSelects();
+
             renderTables();
             renderWorkTimeByDay();
             migrateOldHoursFormat();
