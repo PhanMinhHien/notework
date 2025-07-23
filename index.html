@@ -481,6 +481,17 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+                <h3>Summary: Total Hours</h3>
+                <table id="gfTaskSummaryTable" border="1">
+                    <thead>
+                        <tr>
+                            <th>Asset ID</th>
+                            <th>Asset Names</th>
+                            <th>Total Hours</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
                 <br />
                 <button onclick="resetGrundfosTimes()" style="background: #e74c3c; color: #fff" class="btn">Reset
                     Groundfos Task</button>
@@ -735,7 +746,7 @@
             let name = nameInput.value.trim();
 
             const dateIso = dateInput.value.trim();
-            const id = idInput.value.trim() || "3067732 Catalin";
+            const id = idInput.value.trim() || "3067732";
 
 
             if (!dateIso) {
@@ -856,15 +867,23 @@
                 groupedByWeek[week].push({ ...task, hours: floatHours });
             });
 
+            const currentWeek = getWeekFromDate(new Date().toLocaleDateString('en-GB'));
+            // const currentWeekNum = parseInt(currentWeek.replace(/\D/g, ""));
+
             const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
-                const getNum = (str) => parseInt(str.replace(/\D/g, ""));
-                return getNum(b) - getNum(a);
+                return b.localeCompare(a);
             });
 
             sortedWeeks.forEach((week) => {
-                const tasks = groupedByWeek[week];
+                const weekNum = parseInt(week.replace(/\D/g, ""));
 
+                // if (weekNum < currentWeekNum) {
+                //     return;
+                // }
+
+                const tasks = groupedByWeek[week];
                 let weekTotal = 0;
+
                 tasks.sort((a, b) => {
                     const [d1, m1, y1] = a.date.split("/").map(Number);
                     const [d2, m2, y2] = b.date.split("/").map(Number);
@@ -885,19 +904,65 @@
                 <td>${week}</td>
                 <td>
                      <button onclick="deleteGrundfosDate('${task.date}', '${task.id}')" style="background:#e74c3c;color:#fff;">
-    Delete
-</button>
+                        Delete
+                    </button>
                 </td>
             `;
                     tbody.appendChild(row);
                 });
+                const gfTaskSummaryData = {};
+
+                grundfosTasks.sort((a, b) => {
+                    const cmpID = a.id.localeCompare(b.id);
+                    if (cmpID !== 0) return cmpID;
+                    return a.tickets - b.tickets;
+                });
+
+                grundfosTasks.forEach((item) => {
+                    const taskID = item.id;
+                    const taskName = item.name;
+                    if (!gfTaskSummaryData[taskID]) {
+                        gfTaskSummaryData[taskID] = {
+                            id: taskID,
+                            name: taskName || "",
+                            totalTickets: 0,
+                            totalDecimalHours: 0,
+                        };
+                    }
+
+                    gfTaskSummaryData[taskID].totalTickets += item.tickets;
+                    if (typeof item.hours === "string") {
+                        gfTaskSummaryData[taskID].totalDecimalHours += hhmmToDecimalHours(item.hours);
+                    }
+                });
+
+                const gfTaskTableBody = document.querySelector("#gfTaskSummaryTable tbody");
+                gfTaskTableBody.innerHTML = "";
+
+                let totalTicketsAll = 0;
+                let totalHoursAll = 0;
+
+                Object.values(gfTaskSummaryData)
+                    .sort((a, b) => a.id.localeCompare(b.id))
+                    .forEach((row) => {
+                        const hoursDisplay = row.totalDecimalHours > 0 ? decimalHoursToHM(row.totalDecimalHours) : "-";
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+            <td>${row.id}</td>
+             <td>${row.name}</td>
+            <td>${hoursDisplay}</td>
+        `;
+                        gfTaskTableBody.appendChild(tr);
+                        totalTicketsAll += row.totalTickets;
+                        totalHoursAll += row.totalDecimalHours;
+                    });
 
                 const totalRow = document.createElement("tr");
                 totalRow.style.fontWeight = "bold";
                 totalRow.style.backgroundColor = "#f0f0f0";
                 totalRow.innerHTML = `
-    <td style="text-align:right;" >${week} Total:</td>
-    <td  colspan="4">${floatToHM(weekTotal)}</td>
+            <td style="text-align:right;" >${week} Total:</td>
+            <td colspan="4">${floatToHM(weekTotal)}</td>
         `;
                 tbody.appendChild(totalRow);
 
