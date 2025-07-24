@@ -765,7 +765,7 @@
             const select = document.getElementById("campaignSelectDelete");
             const campaignID = select.value;
             if (!campaignID) return;
-            if (!confirm(`Bạn có chắc muốn xoá Campaign ID: ${campaignID} không?`)) return;
+    if (!confirm(`Are you sure you want to delete Campaign ID: ${campaignID}?`)) return;
             grundfosTasks = grundfosTasks.filter(task => task.id !== campaignID);
             renderCampaignSelects();
 
@@ -778,20 +778,33 @@
     const idInput = document.getElementById("campaignID");
     const nameInput = document.getElementById("campaignName");
     const estInput = document.getElementById("campaignEstHours");
+
     const id = idInput.value.trim();
     const name = nameInput.value.trim();
-    const est = parseFloat(estInput.value.trim());
+    const estRaw = estInput.value.trim();
 
-    if (!id || !name || isNaN(est) || est < 0) {
-        alert("Vui lòng nhập đúng ID, Name và Estimated Hours.");
+    if (!id || !name) {
+        alert("Please enter valid ID and Name.");
         return;
     }
 
+    let est = "-";
+    if (estRaw !== "" && estRaw !== "-") {
+        const parsed = parseFloat(estRaw);
+        if (isNaN(parsed) || parsed < 0) {
+            alert("Estimated Hours must be a positive number or left blank.");
+            return;
+        }
+        est = parsed;
+    }
+
     campaigns.push({ id, name, estHours: est });
+
     const option1 = new Option(`${id} - ${name}`, id);
     const option2 = new Option(`${id} - ${name}`, id);
     document.getElementById("campaignSelectAdd").appendChild(option1);
     document.getElementById("campaignSelectDelete").appendChild(option2);
+
     idInput.value = "";
     nameInput.value = "";
     estInput.value = "";
@@ -800,6 +813,7 @@
     updateCampaignSelect();
     renderCampaignSummary();
 }
+
 
         function updateCampaignSelect() {
             const select = document.getElementById("campaignSelectAdd");
@@ -911,7 +925,7 @@ function saveCampaignEstHours(value, campaignId) {
     } else {
         const float = parseHMtoFloat(cleaned);
         if (isNaN(float)) {
-            alert("Giờ không hợp lệ! Nhập dạng 1:30 hoặc để trống / -");
+            alert("Invalid time! Please enter format like 1:30 or leave blank / '-'");
             renderCampaignSummary();
             return;
         }
