@@ -465,7 +465,21 @@
                     <h2>Add Campaign</h2>
                     <input type="text" id="campaignID" placeholder="Enter Campaign ID" />
                     <input type="text" id="campaignName" placeholder="Enter Campaign Name" />
+                    <input id="campaignEstHours" type="text" placeholder="Estimated Hours" />
+
                     <button onclick="addCampaign()" style="background: #000000; color: #fff">Add Campaign</button>
+                    <table id="campaignSummaryTable" border="1">
+  <thead>
+    <tr>
+      <th>Campaign ID</th>
+      <th>Name</th>
+      <th>Estimated Hours</th>
+      <th>Used Hours</th>
+      <th>Remaining Hours</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
                 </div>
                 <div class="task-section">
                     <h2>Add Grundfos Task</h2>
@@ -764,22 +778,33 @@
             localStorage.setItem("campaigns", JSON.stringify(campaigns));
             renderGrundfosTasks();
         }
-        function addCampaign() {
-            const idInput = document.getElementById("campaignID");
-            const nameInput = document.getElementById("campaignName");
-            const id = idInput.value.trim();
-            const name = nameInput.value.trim();
-            if (!id) return;
-            campaigns.push({ id, name });
-            const option1 = new Option(`${id} - ${name}`, id);
-            const option2 = new Option(`${id} - ${name}`, id);
-            document.getElementById("campaignSelectAdd").appendChild(option1);
-            document.getElementById("campaignSelectDelete").appendChild(option2);
-            idInput.value = "";
-            nameInput.value = "";
-            localStorage.setItem("campaigns", JSON.stringify(campaigns));
-            updateCampaignSelect();
-        }
+      function addCampaign() {
+    const idInput = document.getElementById("campaignID");
+    const nameInput = document.getElementById("campaignName");
+    const estInput = document.getElementById("campaignEstHours");
+    const id = idInput.value.trim();
+    const name = nameInput.value.trim();
+    const est = parseFloat(estInput.value.trim());
+
+    if (!id || !name || isNaN(est) || est < 0) {
+        alert("Vui lòng nhập đúng ID, Name và Estimated Hours.");
+        return;
+    }
+
+    campaigns.push({ id, name, estHours: est });
+    const option1 = new Option(`${id} - ${name}`, id);
+    const option2 = new Option(`${id} - ${name}`, id);
+    document.getElementById("campaignSelectAdd").appendChild(option1);
+    document.getElementById("campaignSelectDelete").appendChild(option2);
+    idInput.value = "";
+    nameInput.value = "";
+    estInput.value = "";
+
+    localStorage.setItem("campaigns", JSON.stringify(campaigns));
+    updateCampaignSelect();
+    renderCampaignSummary();
+}
+
         function updateCampaignSelect() {
             const select = document.getElementById("campaignSelectAdd");
             select.innerHTML = `<option value="">-- Select Campaign --</option>`;
@@ -816,11 +841,78 @@
         hours: floatToHM(float),
         date,
     });
+renderCampaignSummary(); 
 
     saveData();
     renderGrundfosTasks();
     document.getElementById("grundfosHourInput").value = "";
     document.getElementById("grundfosDateInput").value = "";
+}
+function renderCampaignSummary() {
+    const tbody = document.querySelector("#campaignSummaryTable tbody");
+    tbody.innerHTML = "";
+
+    
+    const usedMap = {};
+    grundfosTasks.forEach(task => {
+        const id = task.id;
+        const float = parseHMtoFloat(task.hours);
+        if (!usedMap[id]) usedMap[id] = 0;
+        usedMap[id] += float;
+    });
+
+    campaigns.forEach(c => {
+        const used = usedMap[c.id] || 0;
+        const remain = c.estHours != null ? c.estHours - used : "-";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${c.id}</td>
+            <td>${c.name}</td>
+<td onclick="editCampaignEstHours(this, '${c.id}')" style="cursor:pointer;">
+    ${c.estHours ? decimalHoursToHM(c.estHours) : "-"}
+</td>
+
+            <td>${decimalHoursToHM(used)}</td>
+            <td style="color:${remain < 0 ? 'red' : 'inherit'}">${decimalHoursToHM(remain)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+function editCampaignEstHours(cell, campaignId) {
+    const currentValue = cell.innerText.trim();
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = currentValue;
+    input.style.width = "80px";
+    cell.innerHTML = "";
+    cell.appendChild(input);
+    input.focus();
+
+    input.addEventListener("blur", () => saveCampaignEstHours(input.value, campaignId));
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") input.blur();
+        if (e.key === "Escape") renderCampaignSummary(); 
+    });
+}
+function saveCampaignEstHours(value, campaignId) {
+    const cleaned = value.trim();
+    const campaign = campaigns.find(c => c.id === campaignId);
+    if (!campaign) return;
+
+    if (cleaned === "" || cleaned === "-") {
+        campaign.estHours = null;
+    } else {
+        const float = parseHMtoFloat(cleaned);
+        if (isNaN(float)) {
+            alert("Giờ không hợp lệ! Nhập dạng 1:30 hoặc để trống / -");
+            renderCampaignSummary();
+            return;
+        }
+        campaign.estHours = float;
+    }
+
+    localStorage.setItem("campaigns", JSON.stringify(campaigns));
+    renderCampaignSummary();
 }
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -2076,6 +2168,8 @@
         }
         renderCampaignSelects();
         renderTables();
+        renderCampaignSummary();
+
         renderWorkTimeByDay();
         migrateOldHoursFormat();
         function exportData() {
