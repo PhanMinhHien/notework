@@ -761,18 +761,14 @@
             document.getElementById("toggleWeeksBtn").innerText = showAllWeeks ? "Hidden the rest weeks" : "Show all weeks";
             renderGrundfosTasks();
         }
-        function deleteCampaign() {
+        function deleteSelectedCampaign() {
             const select = document.getElementById("campaignSelectDelete");
             const campaignID = select.value;
             if (!campaignID) return;
             if (!confirm(`Bạn có chắc muốn xoá Campaign ID: ${campaignID} không?`)) return;
             grundfosTasks = grundfosTasks.filter(task => task.id !== campaignID);
-            ["campaignSelectAdd", "campaignSelectDelete"].forEach(id => {
-                const sel = document.getElementById(id);
-                [...sel.options].forEach((opt, i) => {
-                    if (opt.value === campaignID) sel.remove(i);
-                });
-            });
+            renderCampaignSelects();
+
             const index = campaigns.findIndex(c => c.id === campaignID);
             if (index !== -1) campaigns.splice(index, 1);
             localStorage.setItem("campaigns", JSON.stringify(campaigns));
@@ -846,38 +842,49 @@ renderCampaignSummary();
     saveData();
     renderGrundfosTasks();
     document.getElementById("grundfosHourInput").value = "";
-    document.getElementById("grundfosDateInput").value = "";
+    // document.getElementById("grundfosDateInput").value = "";
 }
 function renderCampaignSummary() {
-    const tbody = document.querySelector("#campaignSummaryTable tbody");
-    tbody.innerHTML = "";
+    const table = document.getElementById("campaignSummaryTable");
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th>Campaign ID</th>
+                <th>Name</th>
+                <th>Estimated Hours</th>
+                <th>Used Hours</th>
+                <th>Remaining</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    `;
+    const tbody = table.querySelector("tbody");
 
-    
-    const usedMap = {};
-    grundfosTasks.forEach(task => {
-        const id = task.id;
-        const float = parseHMtoFloat(task.hours);
-        if (!usedMap[id]) usedMap[id] = 0;
-        usedMap[id] += float;
-    });
+    campaigns.forEach((c) => {
+        const used = grundfosTasks
+            .filter(t => t.id === c.id)
+            .reduce((sum, t) => sum + parseHMtoFloat(t.hours), 0);
 
-    campaigns.forEach(c => {
-        const used = usedMap[c.id] || 0;
-        const remain = c.estHours != null ? c.estHours - used : "-";
+        let remaining = "-";
+        if (c.estHours != null) {
+            remaining = floatToHM(c.estHours - used);
+        }
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${c.id}</td>
             <td>${c.name}</td>
-<td onclick="editCampaignEstHours(this, '${c.id}')" style="cursor:pointer;">
-    ${c.estHours ? decimalHoursToHM(c.estHours) : "-"}
-</td>
-
-            <td>${decimalHoursToHM(used)}</td>
-            <td style="color:${remain < 0 ? 'red' : 'inherit'}">${decimalHoursToHM(remain)}</td>
+            <td onclick="editCampaignEstHours(this, '${c.id}')" style="cursor:pointer;">
+                ${c.estHours != null ? floatToHM(c.estHours) : "-"}
+            </td>
+            <td>${floatToHM(used)}</td>
+            <td>${remaining}</td>
         `;
         tbody.appendChild(tr);
     });
 }
+
 function editCampaignEstHours(cell, campaignId) {
     const currentValue = cell.innerText.trim();
     const input = document.createElement("input");
@@ -1076,19 +1083,26 @@ function saveCampaignEstHours(value, campaignId) {
                         });
                 });
         }
-        function renderCampaignSelects() {
-            const selects = ["campaignSelectAdd", "campaignSelectDelete"];
-            selects.forEach(selectID => {
-                const select = document.getElementById(selectID);
-                if (select) {
-                    select.innerHTML = "";
-                    campaigns.forEach(c => {
-                        const option = new Option(`${c.id} - ${c.name}`, c.id);
-                        select.appendChild(option);
-                    });
-                }
+      function renderCampaignSelects() {
+    const selects = ["campaignSelectAdd", "campaignSelectDelete"];
+    
+    selects.forEach(selectID => {
+        const select = document.getElementById(selectID);
+        if (select) {
+            select.innerHTML = "";
+
+            if (selectID === "campaignSelectDelete") {
+                select.innerHTML = `<option value="">-- Select Campaign --</option>`;
+            }
+
+            campaigns.forEach(c => {
+                const option = new Option(`${c.id} - ${c.name}`, c.id);
+                select.appendChild(option);
             });
         }
+    });
+}
+
         const assetTypesRequireHours = ["Web content editing", "Graphics Production", "PDF production & editing request", "Print material design request", "Video creation, editing & upload request"];
         document.getElementById("workDate").valueAsDate = new Date();
         let mainData = JSON.parse(localStorage.getItem("mainData")) || [];
