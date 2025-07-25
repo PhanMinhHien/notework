@@ -885,7 +885,15 @@
                 cell.appendChild(input);
                 input.focus();
 
-                input.addEventListener("blur", () => saveCampaignEstHours(input.value, campaignId));
+                input.addEventListener("blur", () => {
+                    let val = input.value.trim();
+
+                    if (/^\d+$/.test(val)) {
+                        val = `${val}:00`;
+                    }
+
+                    saveCampaignEstHours(val, campaignId);
+                });
                 input.addEventListener("keydown", (e) => {
                     if (e.key === "Enter") input.blur();
                     if (e.key === "Escape") renderCampaignSummary();
