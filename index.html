@@ -932,7 +932,7 @@ function saveCampaignEstHours(value, campaignId) {
         campaign.estHours = float;
     }
 
-    localStorage.setItem("campaigns", JSON.stringify(campaigns));
+    saveData();
     renderCampaignSummary();
 }
 
@@ -1136,6 +1136,8 @@ function saveCampaignEstHours(value, campaignId) {
             localStorage.setItem("workTimes", JSON.stringify(workTimes));
             localStorage.setItem("correctionData", JSON.stringify(correctionData));
             localStorage.setItem("grundfosTasks", JSON.stringify(grundfosTasks));
+            localStorage.setItem("campaigns", JSON.stringify(campaigns));
+
         }
         function autoFormatHours() {
             const hoursField = document.getElementById("hours");
@@ -2208,6 +2210,7 @@ function saveCampaignEstHours(value, campaignId) {
                 workTimes,
                 correctionData,
                 grundfosTasks,
+                 campaigns,
             };
             const blob = new Blob([JSON.stringify(data, null, 2)], {
                 type: "application/json",
@@ -2241,11 +2244,16 @@ function saveCampaignEstHours(value, campaignId) {
                     workTimes = importedData.workTimes || [];
                     correctionData = importedData.correctionData || [];
                     grundfosTasks = importedData.grundfosTasks || [];
+                    campaigns = importedData.campaigns || []; 
+
                     saveData();
                     renderTables();
                     renderWorkTimeByDay();
                     populateCorrectionTable();
                     renderGrundfosTasks();
+                    renderCampaignSummary();
+updateCampaignSelect();
+
                     alert("Data has been successfully imported!");
                 } catch (error) {
                     alert("The file is invalid or corrupted.");
