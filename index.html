@@ -171,26 +171,41 @@
                 justify-content: center;
                 z-index: 1000;
             }
+            .popup-overlay h3 {
+                margin-top: 0;
+            }
 
             .popup {
-                background: #fff;
-                padding: 25px 30px;
+                background-color: white;
+                padding: 20px;
                 border-radius: 10px;
-                width: 380px;
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+                width: 400px;
+                max-width: 90%;
+                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+                text-align: left;
             }
 
-            .popup h3 {
-                margin-top: 0;
-                margin-bottom: 15px;
-                color: #2980b9;
+            #newAssetIdInput {
+                margin-top: 10px;
+                width: 100%;
+                padding: 8px;
+                box-sizing: border-box;
             }
 
-            .popup button {
-                margin-top: 15px;
-                margin-right: 10px;
+            .popup-checkbox {
+                display: block;
+                margin-bottom: 10px;
             }
 
+            .delete-id-link {
+                margin-left: 5px;
+                color: red;
+                text-decoration: none;
+                font-weight: bold;
+            }
+            .button-list {
+                margin-top: 20px;
+            }
             @media (max-width: 768px) {
                 input[type="text"],
                 input[type="number"],
@@ -346,17 +361,18 @@
                             <option>Video creation, editing & upload request</option>
                             <option>Web content editing</option>
                         </select>
-                        <input type="text" readonly id="ticketCount" style="background-color: #d6d6d6" placeholder="Amount of Assets" />
+                        <input type="text" readonly id="ticketCount" style="background-color: #efefef" placeholder="Amount of Assets" />
                         <input type="text" id="hours" placeholder="Working Hours" style="display: none" />
                         <div id="popupOverlay" class="popup-overlay" style="display: none">
                             <div class="popup">
                                 <h3>Select the Asset IDs to keep</h3>
                                 <div id="popupCheckboxes"></div>
-                                <input type="text" id="newAssetIdInput" placeholder="Add a New Asset ID" style="margin-top: 10px" />
-                                <button style="background: #0c6a9b; color: #fff; margin-top: 10px" onclick="addNewAssetId()">Add</button>
-                                <br />
-                                <button style="background: #1190f0; color: #fff" onclick="applyEdit()">Apply</button>
-                                <button style="background: #e74c3c; color: #fff" onclick="closePopup()">Discard</button>
+                                <input type="text" id="newAssetIdInput" placeholder="Add a New Asset ID" />
+                                <div class="button-list">
+                                    <button style="background: #0c6a9b; color: #fff" onclick="addNewAssetId()">Add</button>
+                                    <button style="background: #1190f0; color: #fff" onclick="applyEdit()">Apply</button>
+                                    <button style="background: #e74c3c; color: #fff" onclick="closePopup()">Discard</button>
+                                </div>
                             </div>
                         </div>
                         <button onclick="addTicket()" style="background: #1190f0; color: #fff">Add Ticket</button>
@@ -1830,8 +1846,7 @@
                     label.innerHTML = `
             <input type="checkbox" value="${entry.id}" data-tickets="${entry.tickets}" checked>
             ${entry.id} (<span class="ticket-count">${entry.tickets}</span>)
-            <a href="#" class="delete-id-link" onclick="removeAssetId(this, '${entry.id}')"
-               style="margin-left:5px; color:red; text-decoration:none;">x</a>
+            <a href="#" class="delete-id-link" onclick="removeAssetId(this, '${entry.id}')">x</a>
         `;
                     container.appendChild(label);
                 });
