@@ -997,6 +997,7 @@ function saveCampaignEstHours(value, campaignId) {
             }
             grundfosTasks = grundfosTasks.filter((t) => !(t.date === date && t.id === id));
             saveData();
+            renderCampaignSummary(); 
             renderGrundfosTasks();
         }
         function renderGrundfosCampaignSelect() {
