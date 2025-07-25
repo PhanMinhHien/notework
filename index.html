@@ -87,31 +87,6 @@
                 opacity: 0.85;
             }
 
-            button[style*="background:#f39c12"] {
-                background: #f39c12;
-                color: #fff;
-            }
-
-            button[style*="background:#27ae60"] {
-                background: #27ae60;
-                color: #fff;
-            }
-
-            button[style*="background:#e74c3c"] {
-                background: #e74c3c;
-                color: #fff;
-            }
-
-            button[style*="background:#e67e22"] {
-                background: #e67e22;
-                color: #fff;
-            }
-
-            button[style*="background:#2980b9"] {
-                background: #2980b9;
-                color: #fff;
-            }
-
             @media (max-width: 1670px) {
                 table .btn {
                     width: 100%;
@@ -312,12 +287,8 @@
             }
 
             .btn-green {
-                background-color: #27ae60;
+                background-color: #1399e2;
                 color: white;
-            }
-
-            .btn-green:hover {
-                background-color: #1e8449;
             }
             .tabs {
                 display: flex;
@@ -397,7 +368,7 @@
                         </select>
                         <input type="text" readonly id="ticketCount" style="background-color: #d6d6d6" placeholder="Amount of Assets" />
                         <input type="text" id="hours" placeholder="Working Hours" style="display: none" />
-                        <button onclick="addTicket()" style="background: #000000; color: #fff">Add Ticket</button>
+                        <button onclick="addTicket()" style="background: #1190f0; color: #fff">Add Ticket</button>
                     </div>
                     <div class="ticket-right">
                         <label class="ticket-label" for="weekSelectorToLog">Week to log:</label>
@@ -433,7 +404,7 @@
             <section id="correctionSection" class="section">
                 <h2>Correction</h2>
                 <input type="text" id="idsInput" placeholder="Asset ID" />
-                <button onclick="addIdToCorrectionTable()" style="background: #000000; color: #fff">Add ID</button>
+                <button onclick="addIdToCorrectionTable()" style="background: #1190f0; color: #fff">Add ID</button>
                 <table id="correctionTable">
                     <thead>
                         <tr>
@@ -467,7 +438,7 @@
                     <input type="text" id="campaignName" placeholder="Enter Campaign Name" />
                     <input id="campaignEstHours" type="text" placeholder="Estimated Hours" />
 
-                    <button onclick="addCampaign()" style="background: #000000; color: #fff">Add Campaign</button>
+                    <button onclick="addCampaign()" style="background: #1190f0; color: #fff">Add Campaign</button>
                     <table id="campaignSummaryTable" border="1">
                         <thead>
                             <tr>
@@ -486,7 +457,7 @@
                     <select id="campaignSelectAdd"></select>
                     <input type="text" id="grundfosHourInput" placeholder="Enter hour (h:mm)" />
                     <input type="date" id="grundfosDateInput" />
-                    <button onclick="addGrundfosTask()" style="background: #000000; color: #fff">Add Task</button>
+                    <button onclick="addGrundfosTask()" style="background: #1190f0; color: #fff">Add Task</button>
                 </div>
                 <table id="grundfosTable">
                     <thead>
@@ -515,7 +486,7 @@
                 </table>
                 <br />
                 <div style="margin-bottom: 10px">
-                    <button onclick="toggleAllWeeks()" id="toggleWeeksBtn" style="background: #f39c12; color: #fff">Show all weeks</button>
+                    <button onclick="toggleAllWeeks()" id="toggleWeeksBtn" style="background: #2087b1; color: #fff">Show all weeks</button>
                 </div>
                 <div style="margin-bottom: 10px">
                     <h2>Delete Campaign</h2>
@@ -533,7 +504,7 @@
                     <label>Work Date: <input type="date" id="workDate" value="" /></label>
                     <label>Time In: <input type="time" id="timeIn" /></label>
                     <label>Time Out: <input type="time" id="timeOut" /></label>
-                    <button onclick="addWorkTime()" style="background: #000000; color: #fff">Add Work Time</button>
+                    <button onclick="addWorkTime()" style="background: #1190f0; color: #fff">Add Work Time</button>
                 </div>
                 <div id="workTimeByDay"></div>
                 <button onclick="resetWorkTimes()" style="background: #e74c3c; color: #fff" class="btn">Reset Work Times</button>
@@ -577,9 +548,9 @@
                         <h3>Select the Asset IDs to keep</h3>
                         <div id="popupCheckboxes"></div>
                         <input type="text" id="newAssetIdInput" placeholder="Add a New Asset ID" style="margin-top: 10px" />
-                        <button style="background: #27ae60; color: #fff; margin-top: 10px" onclick="addNewAssetId()">Add</button>
+                        <button style="background: #0c6a9b; color: #fff; margin-top: 10px" onclick="addNewAssetId()">Add</button>
                         <br />
-                        <button style="background: #000000; color: #fff" onclick="applyEdit()">Apply</button>
+                        <button style="background: #1190f0; color: #fff" onclick="applyEdit()">Apply</button>
                         <button style="background: #e74c3c; color: #fff" onclick="closePopup()">Discard</button>
                     </div>
                 </div>
@@ -1303,8 +1274,8 @@
             <td>${item.tickets}</td>
             <td id="main-hours-cell-${index}" ${canEditTime ? 'class="editable-hours"' : ""}>${hoursDisplay}</td>
             <td>
-                ${!canEditTime ? `<button class="btn" style="background:#f39c12;color:#fff;" onclick="openEdit(${index})">Edit</button>` : ""}
-                <button class="btn" style="background:#27ae60;color:#fff;" onclick="moveTicket(${index})">Log</button>
+                ${!canEditTime ? `<button class="btn" style="background:#2087b1;color:#fff;" onclick="openEdit(${index})">Edit</button>` : ""}
+                <button class="btn" style="background:#0c6a9b;color:#fff;" onclick="moveTicket(${index})">Log</button>
                 <button class="btn delete-btn" style="background:#e74c3c;color:#fff;" onclick="deleteMain(${index})">Delete</button>
             </td>
         `;
