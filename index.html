@@ -242,30 +242,6 @@
                 gap: 10px;
                 flex-wrap: wrap;
             }
-
-            .ticket-left input,
-            .ticket-left select,
-            .ticket-left button {
-                padding: 8px 10px;
-                border-radius: 6px;
-                border: 1px solid #ccc;
-                font-size: 14px;
-                min-width: 150px;
-                height: 38px;
-            }
-
-            .ticket-left button {
-                background: #000;
-                color: #fff;
-                border: none;
-                font-weight: bold;
-                cursor: pointer;
-            }
-
-            .ticket-left button:hover {
-                background: #333;
-            }
-
             .ticket-label {
                 font-size: 14px;
                 font-weight: 500;
@@ -327,6 +303,8 @@
             .tab-content.active {
                 display: block;
             }
+            #popupOverlay button {
+            }
         </style>
     </head>
 
@@ -370,6 +348,17 @@
                         </select>
                         <input type="text" readonly id="ticketCount" style="background-color: #d6d6d6" placeholder="Amount of Assets" />
                         <input type="text" id="hours" placeholder="Working Hours" style="display: none" />
+                        <div id="popupOverlay" class="popup-overlay" style="display: none">
+                            <div class="popup">
+                                <h3>Select the Asset IDs to keep</h3>
+                                <div id="popupCheckboxes"></div>
+                                <input type="text" id="newAssetIdInput" placeholder="Add a New Asset ID" style="margin-top: 10px" />
+                                <button style="background: #0c6a9b; color: #fff; margin-top: 10px" onclick="addNewAssetId()">Add</button>
+                                <br />
+                                <button style="background: #1190f0; color: #fff" onclick="applyEdit()">Apply</button>
+                                <button style="background: #e74c3c; color: #fff" onclick="closePopup()">Discard</button>
+                            </div>
+                        </div>
                         <button onclick="addTicket()" style="background: #1190f0; color: #fff">Add Ticket</button>
                     </div>
                     <div class="ticket-right">
@@ -545,17 +534,6 @@
                 </table>
                 <br />
                 <button onclick="resetLoggedTable()" style="background: #e74c3c; color: #fff" class="btn">Reset Timesheet</button>
-                <div id="popupOverlay" class="popup-overlay" style="display: none">
-                    <div class="popup">
-                        <h3>Select the Asset IDs to keep</h3>
-                        <div id="popupCheckboxes"></div>
-                        <input type="text" id="newAssetIdInput" placeholder="Add a New Asset ID" style="margin-top: 10px" />
-                        <button style="background: #0c6a9b; color: #fff; margin-top: 10px" onclick="addNewAssetId()">Add</button>
-                        <br />
-                        <button style="background: #1190f0; color: #fff" onclick="applyEdit()">Apply</button>
-                        <button style="background: #e74c3c; color: #fff" onclick="closePopup()">Discard</button>
-                    </div>
-                </div>
             </section>
         </div>
         <div id="backupTab" class="tab-content">
@@ -1277,6 +1255,7 @@
             <td id="main-hours-cell-${index}" ${canEditTime ? 'class="editable-hours"' : ""}>${hoursDisplay}</td>
             <td>
                 ${!canEditTime ? `<button class="btn" style="background:#2087b1;color:#fff;" onclick="openEdit(${index})">Edit</button>` : ""}
+                
                 <button class="btn" style="background:#0c6a9b;color:#fff;" onclick="moveTicket(${index})">Log</button>
                 <button class="btn delete-btn" style="background:#e74c3c;color:#fff;" onclick="deleteMain(${index})">Delete</button>
             </td>
