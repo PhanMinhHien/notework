@@ -840,16 +840,29 @@
     `;
                 const tbody = table.querySelector("tbody");
 
-                campaigns.forEach((c) => {
-                    const used = grundfosTasks.filter((t) => t.id === c.id).reduce((sum, t) => sum + parseHMtoFloat(t.hours), 0);
+                campaigns
+                    .slice()
+                    .sort((a, b) => {
+                        const cmpName = (a.name || "").localeCompare(b.name || "");
+                        if (cmpName !== 0) return cmpName;
 
-                    let remaining = "-";
-                    if (c.estHours != null) {
-                        remaining = floatToHM(c.estHours - used);
-                    }
+                        const cmpId = cleanId(a.id).localeCompare(cleanId(b.id));
+                        if (cmpId !== 0) return cmpId;
 
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
+                        const aEst = a.estHours ?? 0;
+                        const bEst = b.estHours ?? 0;
+                        return aEst - bEst;
+                    })
+                    .forEach((c) => {
+                        const used = grundfosTasks.filter((t) => t.id === c.id).reduce((sum, t) => sum + parseHMtoFloat(t.hours), 0);
+
+                        let remaining = "-";
+                        if (c.estHours != null) {
+                            remaining = floatToHM(c.estHours - used);
+                        }
+
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
             <td>${c.id}</td>
             <td>${c.name}</td>
             <td onclick="editCampaignEstHours(this, '${c.id}')" style="cursor:pointer;">
@@ -858,8 +871,8 @@
             <td>${floatToHM(used)}</td>
             <td>${remaining}</td>
         `;
-                    tbody.appendChild(tr);
-                });
+                        tbody.appendChild(tr);
+                    });
             }
 
             function editCampaignEstHours(cell, campaignId) {
@@ -991,11 +1004,19 @@
                     if (!showAllWeeks && week !== currentWeek) return;
                     const tasks = groupedByWeek[week];
                     let weekTotal = 0;
+
                     tasks.sort((a, b) => {
+                        const cmpType = (a.name || "").localeCompare(b.name || "");
+                        if (cmpType !== 0) return cmpType;
+
+                        const cmpId = cleanId(a.id).localeCompare(cleanId(b.id));
+                        if (cmpId !== 0) return cmpId;
+
                         const [d1, m1, y1] = a.date.split("/").map(Number);
                         const [d2, m2, y2] = b.date.split("/").map(Number);
                         return new Date(y1, m1 - 1, d1) - new Date(y2, m2 - 1, d2);
                     });
+
                     tasks.forEach((task) => {
                         weekTotal += task.floatHours;
                         const row = document.createElement("tr");
@@ -1047,18 +1068,32 @@
                     .sort((a, b) => b.localeCompare(a))
                     .forEach((week) => {
                         const summaryForWeek = allSummary[week];
+
                         Object.values(summaryForWeek)
-                            .sort((a, b) => a.id.localeCompare(b.id))
+                            .sort((a, b) => {
+                                const cmpType = a.name.localeCompare(b.name);
+                                if (cmpType !== 0) return cmpType;
+
+                                const cmpId = cleanId(a.id).localeCompare(cleanId(b.id));
+                                if (cmpId !== 0) return cmpId;
+
+                                return a.totalDecimalHours - b.totalDecimalHours;
+                            })
                             .forEach((row) => {
                                 const tr = document.createElement("tr");
                                 tr.innerHTML = `
-                        <td>${row.id}</td>
-                        <td>${row.name}</td>
-                        <td>${week}</td>
-                        <td>${decimalHoursToHM(row.totalDecimalHours)}</td>
-                    `;
+            <td>${row.id}</td>
+            <td>${row.name}</td>
+            <td>${week}</td>
+            <td>${decimalHoursToHM(row.totalDecimalHours)}</td>
+        `;
                                 summaryBody.appendChild(tr);
                             });
+
+                        const spacerRow = document.createElement("tr");
+                        spacerRow.style.backgroundColor = "#FFFFFF";
+                        spacerRow.innerHTML = `<td colspan="4" style="height: 50px;"></td>`;
+                        summaryBody.appendChild(spacerRow);
                     });
             }
             function renderCampaignSelects() {
