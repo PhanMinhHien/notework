@@ -943,6 +943,7 @@
                     }
                     saveData();
                     renderGrundfosTasks();
+                    renderCampaignSummary();
                 };
 
                 input.onkeydown = (e) => {
@@ -2182,7 +2183,6 @@
             renderCampaignSelects();
             renderTables();
             renderCampaignSummary();
-
             renderWorkTimeByDay();
             migrateOldHoursFormat();
             function exportData() {
