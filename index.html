@@ -2212,16 +2212,21 @@
                     try {
                         const importedData = JSON.parse(e.target.result);
                         mainData = importedData.mainData || [];
-                        loggedData = importedData.loggedData || [];
                         workTimes = importedData.workTimes || [];
-                        correctionData = importedData.correctionData || [];
+                        if (Array.isArray(importedData.correctionData) && importedData.correctionData.length > 0) {
+                            correctionData = importedData.correctionData;
+                            populateCorrectionTable();
+                        }
+                        if (Array.isArray(importedData.workTimes) && importedData.workTimes.length > 0) {
+                            workTimes = importedData.workTimes;
+                            renderWorkTimeByDay();
+                        }
+
                         grundfosTasks = importedData.grundfosTasks || [];
                         campaigns = importedData.campaigns || [];
 
                         saveData();
                         renderTables();
-                        renderWorkTimeByDay();
-                        populateCorrectionTable();
                         renderGrundfosTasks();
                         renderCampaignSummary();
                         updateCampaignSelect();
@@ -2233,6 +2238,10 @@
                     }
                 };
                 reader.readAsText(file);
+                if (correctionData.length === 0) {
+                    console.warn("No correction data available in this file.");
+                    document.getElementById("correctionTable").innerHTML = "<tr><td colspan='5'>No correction data found.</td></tr>";
+                }
             }
             function resetLoggedTable() {
                 if (confirm("Are you sure you want to delete all data in the Timesheet?")) {
