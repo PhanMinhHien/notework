@@ -917,24 +917,34 @@
                 input.style.width = "60px";
                 input.onblur = () => {
                     let val = input.value.trim();
-                    if (/^\d+$/.test(val)) {
-                        val = `${val}:00`;
+                    const parts = val.split(":");
+                    if (parts.length === 1 && /^\d+$/.test(parts[0])) {
+                        val = `${parseInt(parts[0], 10)}:00`;
+                    } else if (parts.length === 2) {
+                        let h = parseInt(parts[0], 10);
+                        let m = parseInt(parts[1], 10);
+                        if (isNaN(h)) h = 0;
+                        if (isNaN(m)) m = 0;
+                        val = `${h}:${m.toString().padStart(2, "0")}`;
                     }
+
                     const float = parseHMtoFloat(val);
                     if (val === "" || isNaN(float) || float < 0) {
                         alert("Please enter a valid non-negative number for hours (format h:mm).");
                         renderGrundfosTasks();
                         return;
                     }
+
                     const row = td.parentElement;
                     const id = row.cells[0].textContent.trim();
-                    const task = grundfosTasks.find((t) => t.date === date && (t.id || "123") === id);
+                    const task = grundfosTasks.find((t) => t.date === date && cleanId(t.id) === cleanId(id));
                     if (task) {
                         task.hours = floatToHM(float);
                     }
                     saveData();
                     renderGrundfosTasks();
                 };
+
                 input.onkeydown = (e) => {
                     if (e.key === "Enter") input.blur();
                 };
@@ -998,7 +1008,7 @@
                         row.innerHTML = `
                 <td>${task.id}</td>
                 <td>${task.name || ""}</td>
-                <td onclick="editGrundfosHoursCell(this, '${task.date}')" style="cursor:pointer;">
+                <td onclick="editGrundfosHoursCell(this, '${task.date}', '${task.id}')" style="cursor:pointer;">
                     ${floatToHM(task.floatHours)}
                 </td>
                 <td>${task.date}</td>
