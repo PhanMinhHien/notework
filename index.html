@@ -144,15 +144,15 @@
             }
 
             /* #ticketsSection,
-        #timesheetSection,
-        #backupRestoreSection,
-        #worktimeSection,
-        #correctionSection,
-        #GFtask {
-            max-width: 80%;
-            margin: auto;
-            margin-bottom: 40px;
-        } */
+                    #timesheetSection,
+                    #backupRestoreSection,
+                    #worktimeSection,
+                    #correctionSection,
+                    #GFtask {
+                        max-width: 80%;
+                        margin: auto;
+                        margin-bottom: 40px;
+                    } */
             #ticketsSection div > input,
             #ticketsSection div > select,
             #ticketsSection div > button {
@@ -318,7 +318,14 @@
             .tab-content.active {
                 display: block;
             }
-            #popupOverlay button {
+            #gfTaskSummary {
+                max-height: 500px;
+                overflow-y: auto;
+            }
+            #gfTaskSummary thead {
+                position: sticky;
+                top: 0;
+                background: #f1f1f1;
             }
         </style>
     </head>
@@ -480,17 +487,19 @@
                     <tbody></tbody>
                 </table>
                 <h3>Summary: Total Hours</h3>
-                <table id="gfTaskSummaryTable" border="1">
-                    <thead>
-                        <tr>
-                            <th>Campaign ID</th>
-                            <th>Campaign Names</th>
-                            <th>Week</th>
-                            <th>Total Hours</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+                <div class="gfTaskSummary">
+                    <table id="gfTaskSummaryTable" border="1">
+                        <thead>
+                            <tr>
+                                <th>Campaign ID</th>
+                                <th>Campaign Names</th>
+                                <th>Week</th>
+                                <th>Total Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
                 <br />
                 <div style="margin-bottom: 10px">
                     <button onclick="toggleAllWeeks()" id="toggleWeeksBtn" style="background: #2087b1; color: #fff">Show all weeks</button>
