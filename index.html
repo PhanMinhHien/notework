@@ -466,12 +466,17 @@
                         <tbody></tbody>
                     </table>
                 </div>
-                <div class="task-section">
-                    <h2>Add Grundfos Task</h2>
-                    <select id="campaignSelectAdd"></select>
-                    <input type="text" id="grundfosHourInput" placeholder="Enter hour (h:mm)" />
-                    <input type="date" id="grundfosDateInput" />
-                    <button onclick="addGrundfosTask()" style="background: #1190f0; color: #fff">Add Task</button>
+                <div class="task-section ticket-row">
+                    <div class="ticket-left">
+                        <h2>Add Grundfos Task</h2>
+                        <select id="campaignSelectAdd"></select>
+                        <input type="text" id="grundfosHourInput" placeholder="Enter hour (h:mm)" />
+                        <input type="date" id="grundfosDateInput" />
+                        <button onclick="addGrundfosTask()" style="background: #1190f0; color: #fff">Add Task</button>
+                    </div>
+                    <div class="ticket-right">
+                        <button onclick="toggleAllWeeks()" id="toggleWeeksBtn" style="background: #2087b1; color: #fff">Show all weeks</button>
+                    </div>
                 </div>
                 <table id="grundfosTable">
                     <thead>
@@ -486,9 +491,7 @@
                     </thead>
                     <tbody></tbody>
                 </table>
-                <div style="margin-bottom: 10px">
-                    <button onclick="toggleAllWeeks()" id="toggleWeeksBtn" style="background: #2087b1; color: #fff">Show all weeks</button>
-                </div>
+
                 <h3>Summary: Total Hours</h3>
                 <div class="gfTaskSummary">
                     <table id="gfTaskSummaryTable" border="1">
