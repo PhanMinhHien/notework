@@ -466,16 +466,18 @@
                         <tbody></tbody>
                     </table>
                 </div>
-                <div class="task-section ticket-row">
-                    <div class="ticket-left">
-                        <h2>Add Grundfos Task</h2>
-                        <select id="campaignSelectAdd"></select>
-                        <input type="text" id="grundfosHourInput" placeholder="Enter hour (h:mm)" />
-                        <input type="date" id="grundfosDateInput" />
-                        <button onclick="addGrundfosTask()" style="background: #1190f0; color: #fff">Add Task</button>
-                    </div>
-                    <div class="ticket-right">
-                        <button onclick="toggleAllWeeks()" id="toggleWeeksBtn" style="background: #2087b1; color: #fff">Show all weeks</button>
+                <div class="task-section">
+                    <h2>Add Grundfos Task</h2>
+                    <div class="ticket-row">
+                        <div class="ticket-left">
+                            <select id="campaignSelectAdd"></select>
+                            <input type="text" id="grundfosHourInput" placeholder="Enter hour (h:mm)" />
+                            <input type="date" id="grundfosDateInput" />
+                            <button onclick="addGrundfosTask()" style="background: #1190f0; color: #fff">Add Task</button>
+                        </div>
+                        <div class="ticket-right">
+                            <button onclick="toggleAllWeeks()" id="toggleWeeksBtn" style="background: #2087b1; color: #fff">Show all weeks</button>
+                        </div>
                     </div>
                 </div>
                 <table id="grundfosTable">
