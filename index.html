@@ -2237,6 +2237,7 @@
                     try {
                         const importedData = JSON.parse(e.target.result);
                         mainData = importedData.mainData || [];
+                         loggedData = importedData.loggedData || [];
                         workTimes = importedData.workTimes || [];
                         if (Array.isArray(importedData.correctionData) && importedData.correctionData.length > 0) {
                             correctionData = importedData.correctionData;
