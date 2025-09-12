@@ -1901,52 +1901,94 @@
                 return h + m / 60;
             }
             function applyEdit() {
-                const checkboxes = document.querySelectorAll("#popupCheckboxes input[type=checkbox]");
-                const keptTickets = {};
-                const keptIds = [];
-                checkboxes.forEach((cb) => {
-                    const id = cb.value;
-                    const tickets = parseInt(cb.getAttribute("data-tickets")) || 1;
-                    if (cb.checked) {
-                        keptIds.push(id);
-                        keptTickets[id] = tickets;
-                    }
-                });
-                const newAssetInput = document.getElementById("newAssetIdInput").value.trim();
-                const newParts = newAssetInput ? newAssetInput.split(/\s+/).filter(Boolean) : [];
-                newParts.forEach((part) => {
-                    const match = part.match(/^(\d+)(?:\((\d+)\))?$/);
-                    if (!match) {
-                        alert(`Invalid asset ID format: ${part}`);
-                        return;
-                    }
-                    const id = match[1];
-                    const tickets = match[2] ? parseInt(match[2], 10) : 1;
-                    if (keptTickets[id]) {
-                        keptTickets[id] += tickets;
-                    } else {
-                        keptIds.push(id);
-                        keptTickets[id] = tickets;
-                    }
-                });
-                const assetIdStr = keptIds.map((id) => id + (keptTickets[id] > 1 ? `(${keptTickets[id]})` : "")).join(", ");
-                const totalTickets = keptIds.reduce((sum, id) => sum + keptTickets[id], 0);
-                const item = mainData[editIndex];
-                item.assetId = assetIdStr;
-                item.tickets = totalTickets;
-                if (item.assetType.toLowerCase() === "teaser creation") {
-                    const decimalHours = totalTickets * 0.5;
-                    item.hours = decimalHoursToHM(decimalHours);
-                } else if (item.assetType.toLowerCase() === "banner release") {
-                    const decimalHours = totalTickets * 0.25;
-                    item.hours = decimalHoursToHM(decimalHours);
-                } else {
-                }
-                saveData();
-                renderTables();
-                document.getElementById("newAssetIdInput").value = "";
-                closePopup();
-            }
+    const checkboxes = document.querySelectorAll("#popupCheckboxes input[type=checkbox]");
+    const keptTickets = {};
+    const keptIds = [];
+    const removedIds = [];
+
+    checkboxes.forEach((cb) => {
+        const id = cb.value;
+        const tickets = parseInt(cb.getAttribute("data-tickets")) || 1;
+        if (cb.checked) {
+            keptIds.push(id);
+            keptTickets[id] = tickets;
+        } else {
+            removedIds.push({ id, tickets });
+        }
+    });
+
+    if (removedIds.length > 0) {
+    removedIds.forEach(({ id, tickets }) => {
+        const item = { ...mainData[editIndex] };
+        item.assetId = id + (tickets > 1 ? `(${tickets})` : "");
+        item.tickets = tickets;
+
+        if (item.assetType.toLowerCase() === "teaser creation") {
+            const decimalHours = tickets * 0.5;
+            item.hours = decimalHoursToHM(decimalHours);
+        } else if (item.assetType.toLowerCase() === "banner release") {
+            const decimalHours = tickets * 0.25;
+            item.hours = decimalHoursToHM(decimalHours);
+        }
+
+        const selectedWeek = document.getElementById("weekSelectorToLog")?.value;
+        let weekString;
+        if (selectedWeek && selectedWeek !== "") {
+            weekString = selectedWeek;
+        } else {
+            const today = new Date();
+            const oneJan = new Date(today.getFullYear(), 0, 1);
+            const numberOfDays = Math.floor((today - oneJan) / 86400000);
+            const weekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
+            weekString = `Week ${weekNumber}`;
+        }
+        item.week = weekString;
+
+        loggedData.push(item);
+    });
+}
+
+
+    const newAssetInput = document.getElementById("newAssetIdInput").value.trim();
+    const newParts = newAssetInput ? newAssetInput.split(/\s+/).filter(Boolean) : [];
+    newParts.forEach((part) => {
+        const match = part.match(/^(\d+)(?:\((\d+)\))?$/);
+        if (!match) {
+            alert(`Invalid asset ID format: ${part}`);
+            return;
+        }
+        const id = match[1];
+        const tickets = match[2] ? parseInt(match[2], 10) : 1;
+        if (keptTickets[id]) {
+            keptTickets[id] += tickets;
+        } else {
+            keptIds.push(id);
+            keptTickets[id] = tickets;
+        }
+    });
+
+    const assetIdStr = keptIds
+        .map((id) => id + (keptTickets[id] > 1 ? `(${keptTickets[id]})` : ""))
+        .join(", ");
+    const totalTickets = keptIds.reduce((sum, id) => sum + keptTickets[id], 0);
+
+    const item = mainData[editIndex];
+    item.assetId = assetIdStr;
+    item.tickets = totalTickets;
+
+    if (item.assetType.toLowerCase() === "teaser creation") {
+        const decimalHours = totalTickets * 0.5;
+        item.hours = decimalHoursToHM(decimalHours);
+    } else if (item.assetType.toLowerCase() === "banner release") {
+        const decimalHours = totalTickets * 0.25;
+        item.hours = decimalHoursToHM(decimalHours);
+    }
+
+    saveData();
+    renderTables();
+    document.getElementById("newAssetIdInput").value = "";
+    closePopup();
+}
             function addNewAssetId() {
                 const input = document.getElementById("newAssetIdInput");
                 const value = input.value.trim();
