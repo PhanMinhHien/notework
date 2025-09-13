@@ -2062,7 +2062,6 @@
                 loggedData.push(item);
                 saveData();
                 renderTables();
-                populateCorrectionTable();
             }
             const weeksSet = new Set();
             loggedData.forEach((item) => {
@@ -2283,7 +2282,7 @@
                         workTimes = importedData.workTimes || [];
                         if (Array.isArray(importedData.correctionData) && importedData.correctionData.length > 0) {
                             correctionData = importedData.correctionData;
-                            populateCorrectionTable();
+                            renderTables();
                         }
                         if (Array.isArray(importedData.workTimes) && importedData.workTimes.length > 0) {
                             workTimes = importedData.workTimes;
