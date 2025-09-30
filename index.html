@@ -600,6 +600,7 @@
                 <button onclick="loadBackup()">Load</button>
                 <button onclick="downloadBackup()">Download</button>
                 <button onclick="deleteBackup()">Delete</button>
+                 <button onclick="saveBackup()">Save Backup</button>
             </div>
 
         </section>
@@ -2398,21 +2399,51 @@
 
 
         // ===== BACKUP MANAGEMENT =====
+        // function refreshBackupSelect() {
+        //     const select = document.getElementById("backupSelect");
+        //     select.innerHTML = '<option value="">-- Select a backup --</option>';
+
+        //     const keys = Object.keys(localStorage)
+        //         .filter(k => k.startsWith("backup_"))
+        //         .sort();
+
+        //     keys.forEach(k => {
+        //         const option = document.createElement("option");
+        //         option.value = k;
+        //         option.textContent = k;
+        //         select.appendChild(option);
+        //     });
+        // }
         function refreshBackupSelect() {
-            const select = document.getElementById("backupSelect");
-            select.innerHTML = '<option value="">-- Select a backup --</option>';
+    const select = document.getElementById("backupSelect");
+    select.innerHTML = '<option value="">-- Select a backup --</option>';
 
-            const keys = Object.keys(localStorage)
-                .filter(k => k.startsWith("backup_"))
-                .sort();
+    const keys = Object.keys(localStorage)
+        .filter(k => k.startsWith("backup_") || k.startsWith("backup_now_"))
+        .sort();
 
-            keys.forEach(k => {
-                const option = document.createElement("option");
-                option.value = k;
-                option.textContent = k;
-                select.appendChild(option);
-            });
-        }
+    keys.forEach(k => {
+        const option = document.createElement("option");
+        option.value = k;
+        option.textContent = k;
+        select.appendChild(option);
+    });
+}
+
+function downloadBackup() {
+    const key = document.getElementById("backupSelect").value;
+    if (!key) return alert("Please select a backup!");
+
+    const data = localStorage.getItem(key);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${key}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
 
         function loadBackup() {
             const key = document.getElementById("backupSelect").value;
@@ -2434,19 +2465,19 @@
             updateCampaignSelect();
         }
 
-        function downloadBackup() {
-            const key = document.getElementById("backupSelect").value;
-            if (!key) return alert("Please select a backup!");
+        // function downloadBackup() {
+        //     const key = document.getElementById("backupSelect").value;
+        //     if (!key) return alert("Please select a backup!");
 
-            const data = localStorage.getItem(key);
-            const blob = new Blob([data], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `${key}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
+        //     const data = localStorage.getItem(key);
+        //     const blob = new Blob([data], { type: "application/json" });
+        //     const url = URL.createObjectURL(blob);
+        //     const a = document.createElement("a");
+        //     a.href = url;
+        //     a.download = `${key}.json`;
+        //     a.click();
+        //     URL.revokeObjectURL(url);
+        // }
 
         function deleteBackup() {
             const key = document.getElementById("backupSelect").value;
@@ -2460,6 +2491,27 @@
         // init dropdown on page load
         refreshBackupSelect();
 
+function saveBackup() {
+    const data = {
+        mainData,
+        loggedData,
+        workTimes,
+        correctionData,
+        grundfosTasks,
+        campaigns,
+    };
+
+    const now = new Date();
+    const key = `backup_now_${now.getFullYear()}-${(now.getMonth() + 1)
+        .toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours()}-${now.getMinutes()}`;
+
+    localStorage.setItem(key, JSON.stringify(data, null, 2));
+    console.log("Backup saved:", key);
+
+    refreshBackupSelect();
+ exportData();
+    // alert("Backup has been saved!");
+}
 
         function resetLoggedTable() {
             if (confirm("Are you sure you want to delete all data in the Timesheet?")) {
