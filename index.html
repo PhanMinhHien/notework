@@ -600,7 +600,7 @@
                 <button onclick="loadBackup()">Load</button>
                 <button onclick="downloadBackup()">Download</button>
                 <button onclick="deleteBackup()">Delete</button>
-                 <button onclick="saveBackup()">Save Backup</button>
+                <button onclick="saveBackup()">Save Backup</button>
             </div>
 
         </section>
@@ -1472,9 +1472,42 @@
                 if (cmpId !== 0) return cmpId;
                 return a.tickets - b.tickets;
             });
+            // loggedData.forEach((item, index) => {
+            //     if (selectedWeek !== "" && item.week !== selectedWeek) return;
+            //     const assetType = item.assetType;
+            //     if (!groupedLoggedData[assetType]) {
+            //         groupedLoggedData[assetType] = {
+            //             assetIds: [],
+            //             assetType: item.assetType,
+            //             tickets: 0,
+            //             hours: item.hours,
+            //             weeks: new Set(),
+            //             originalIndexes: [],
+            //         };
+            //     }
+            //     groupedLoggedData[assetType].originalIndexes.push(index);
+            //     groupedLoggedData[assetType].tickets += item.tickets;
+            //     groupedLoggedData[assetType].assetIds.push(item.assetId);
+            //     if (item.week) groupedLoggedData[assetType].weeks.add(item.week);
+            // });
             loggedData.forEach((item, index) => {
                 if (selectedWeek !== "" && item.week !== selectedWeek) return;
+
                 const assetType = item.assetType;
+
+                if (assetTypesRequireHours.includes(assetType)) {
+                    const key = `${assetType}_${index}`;
+                    groupedLoggedData[key] = {
+                        assetIds: [item.assetId],
+                        assetType: item.assetType,
+                        tickets: item.tickets,
+                        hours: item.hours,
+                        weeks: new Set(item.week ? [item.week] : []),
+                        originalIndexes: [index],
+                    };
+                    return;
+                }
+
                 if (!groupedLoggedData[assetType]) {
                     groupedLoggedData[assetType] = {
                         assetIds: [],
@@ -1490,6 +1523,7 @@
                 groupedLoggedData[assetType].assetIds.push(item.assetId);
                 if (item.week) groupedLoggedData[assetType].weeks.add(item.week);
             });
+
             const loggedSummaryData = {};
             loggedData.forEach((item) => {
                 if (selectedWeek !== "" && item.week !== selectedWeek) return;
@@ -2415,34 +2449,34 @@
         //     });
         // }
         function refreshBackupSelect() {
-    const select = document.getElementById("backupSelect");
-    select.innerHTML = '<option value="">-- Select a backup --</option>';
+            const select = document.getElementById("backupSelect");
+            select.innerHTML = '<option value="">-- Select a backup --</option>';
 
-    const keys = Object.keys(localStorage)
-        .filter(k => k.startsWith("backup_") || k.startsWith("backup_now_"))
-        .sort();
+            const keys = Object.keys(localStorage)
+                .filter(k => k.startsWith("backup_") || k.startsWith("backup_now_"))
+                .sort();
 
-    keys.forEach(k => {
-        const option = document.createElement("option");
-        option.value = k;
-        option.textContent = k;
-        select.appendChild(option);
-    });
-}
+            keys.forEach(k => {
+                const option = document.createElement("option");
+                option.value = k;
+                option.textContent = k;
+                select.appendChild(option);
+            });
+        }
 
-function downloadBackup() {
-    const key = document.getElementById("backupSelect").value;
-    if (!key) return alert("Please select a backup!");
+        function downloadBackup() {
+            const key = document.getElementById("backupSelect").value;
+            if (!key) return alert("Please select a backup!");
 
-    const data = localStorage.getItem(key);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${key}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-}
+            const data = localStorage.getItem(key);
+            const blob = new Blob([data], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${key}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
 
 
         function loadBackup() {
@@ -2491,27 +2525,27 @@ function downloadBackup() {
         // init dropdown on page load
         refreshBackupSelect();
 
-function saveBackup() {
-    const data = {
-        mainData,
-        loggedData,
-        workTimes,
-        correctionData,
-        grundfosTasks,
-        campaigns,
-    };
+        function saveBackup() {
+            const data = {
+                mainData,
+                loggedData,
+                workTimes,
+                correctionData,
+                grundfosTasks,
+                campaigns,
+            };
 
-    const now = new Date();
-    const key = `backup_now_${now.getFullYear()}-${(now.getMonth() + 1)
-        .toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours()}-${now.getMinutes()}`;
+            const now = new Date();
+            const key = `backup_now_${now.getFullYear()}-${(now.getMonth() + 1)
+                .toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours()}-${now.getMinutes()}`;
 
-    localStorage.setItem(key, JSON.stringify(data, null, 2));
-    console.log("Backup saved:", key);
+            localStorage.setItem(key, JSON.stringify(data, null, 2));
+            console.log("Backup saved:", key);
 
-    refreshBackupSelect();
- exportData();
-    // alert("Backup has been saved!");
-}
+            refreshBackupSelect();
+            exportData();
+            // alert("Backup has been saved!");
+        }
 
         function resetLoggedTable() {
             if (confirm("Are you sure you want to delete all data in the Timesheet?")) {
