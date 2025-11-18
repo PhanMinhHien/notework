@@ -540,8 +540,7 @@
                 <label>Work Date: <input type="date" id="workDate" value="" /></label>
                 <label>Time In: <input type="time" id="timeIn" /></label>
                 <label>Time Out: <input type="time" id="timeOut" /></label>
-                <label for="lunchBreak">Lunch Break:</label>
-                <input type="text" id="lunchBreak" placeholder="hh:mm, default 01:00">
+                <input type="text" id="lunchBreak" value="1" style="display:none;" />
                 <button onclick="addWorkTime()" style="background: #1190f0; color: #fff">Add Work Time</button>
             </div>
             <div id="workTimeByDay"></div>
@@ -2166,20 +2165,13 @@
             const dateStr = document.getElementById("workDate").value;
             const timeInStr = document.getElementById("timeIn").value;
             const timeOutStr = document.getElementById("timeOut").value;
-            const lunchBreakStr = document.getElementById("lunchBreak").value;
+
             if (!dateStr) {
                 alert("Please enter the work date.");
                 return;
             }
+
             let duration = 0;
-            let lunchBreak = 1;
-            if (lunchBreakStr && !isNaN(lunchBreakStr)) {
-                lunchBreak = parseFloat(lunchBreakStr);
-                if (lunchBreak % 1 !== 0) {
-                    const minutes = (lunchBreak % 1) * 60;
-                    lunchBreak = Math.floor(lunchBreak) + (minutes / 60);
-                }
-            }
 
             if (timeInStr && timeOutStr) {
                 const timeIn = parseTime(timeInStr);
@@ -2189,27 +2181,28 @@
                     return;
                 }
                 duration = (timeOut - timeIn) / 3600000;
-                duration -= lunchBreak;
-
                 duration = Math.max(duration, 0);
-
             }
+
             const date = new Date(dateStr);
             const dayOfWeek = date.getDay();
+
             workTimes.push({
                 date: dateStr,
                 dayOfWeek,
                 timeIn: timeInStr || "",
                 timeOut: timeOutStr || "",
-                lunchBreak: lunchBreak,
+                lunchBreak: "01:00",
                 duration,
             });
+
             saveData();
             renderWorkTimeByDay();
+
             document.getElementById("timeIn").value = "";
             document.getElementById("timeOut").value = "";
-            ocument.getElementById("lunchBreak").value = "";
         }
+
         function decimalHoursToHM(decimalHours) {
             const h = Math.floor(decimalHours);
             const m = Math.round((decimalHours - h) * 60);
