@@ -1158,27 +1158,20 @@
             localStorage.setItem("flexiBase", flexiBase);
         }
         function calculateFlexi() {
-            const today = new Date();
-            const currentWeek = getWeekFromDate(
-                `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`
-            );
-
-            let weekFlexi = 0;
+            let flexiChange = 0;
 
             workTimes.forEach(w => {
-                const weekOfDay = getWeekFromDate(w.date);
-
-                if (weekOfDay === currentWeek && w.duration > 0) {
-                    weekFlexi += w.duration - 8; // trừ 8h chuẩn
+                if (w.duration > 0) { // ✨ chỉ tính những ngày có giờ làm
+                    const diff = w.duration - 8;  // chuẩn 8h mỗi ngày
+                    flexiChange += diff;
                 }
             });
 
-            // Nếu muốn hiển thị flexi tuần hiện tại
-            document.getElementById("currentWeekFlexi").innerText =
-                `Flexi this week: ${weekFlexi.toFixed(2)} h`;
+            const totalFlexi = flexiBase + flexiChange;
 
-            return weekFlexi;
+            document.getElementById("flexiValue").innerText = totalFlexi.toFixed(2) + "h";
         }
+
 
 
 
