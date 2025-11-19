@@ -2181,6 +2181,7 @@
                     return;
                 }
                 duration = (timeOut - timeIn) / 3600000;
+                duration -= hhmmToDecimalHours("01:00");
                 duration = Math.max(duration, 0);
             }
 
