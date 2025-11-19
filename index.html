@@ -1158,17 +1158,28 @@
             localStorage.setItem("flexiBase", flexiBase);
         }
         function calculateFlexi() {
-            let flexiChange = 0;
+            const today = new Date();
+            const currentWeek = getWeekFromDate(
+                `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`
+            );
+
+            let weekFlexi = 0;
 
             workTimes.forEach(w => {
-                const diff = w.duration - 8;  // chuẩn 8h mỗi ngày
-                flexiChange += diff;
+                const weekOfDay = getWeekFromDate(w.date);
+
+                if (weekOfDay === currentWeek && w.duration > 0) {
+                    weekFlexi += w.duration - 8; // trừ 8h chuẩn
+                }
             });
 
-            const totalFlexi = flexiBase + flexiChange;
+            // Nếu muốn hiển thị flexi tuần hiện tại
+            document.getElementById("currentWeekFlexi").innerText =
+                `Flexi this week: ${weekFlexi.toFixed(2)} h`;
 
-            document.getElementById("flexiValue").innerText = totalFlexi.toFixed(2) + "h";
+            return weekFlexi;
         }
+
 
 
         const assetTypesRequireHours = ["Web content editing", "Graphics Production", "PDF production & editing request", "Print material design request", "Video creation, editing & upload request"];
