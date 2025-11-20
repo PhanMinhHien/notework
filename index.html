@@ -538,21 +538,46 @@
             <h2>Work time</h2>
             <div id="flexiDisplay" style="font-size:18px; margin:15px 0;">
                 Flexi Hours: <b id="flexiValue">0h</b>
+                <button onclick="editFlexiBase()"
+                    style="margin-left: 20px; background: #2087b1; color: #fff; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;">Edit
+                    Base</button>
             </div>
+            <div
+                style="margin: 15px 0; padding: 10px; background: #e8f5e9; border-radius: 5px; border-left: 4px solid #4CAF50;">
+                <p style="margin: 0; color: #2e7d32; font-size: 14px;">
+                    💡 <strong>Note:</strong> To deduct leave hours, add a work entry with negative duration (e.g., -8
+                    for 8 hours of leave)
+                </p>
+            </div>
+            <label>
+                <input type="radio" name="timeInputMode" value="timerange" checked onchange="toggleTimeInputMode()">
+                Time Range (Time In/Out)
+            </label>
+            <label style="margin-left: 20px;">
+                <input type="radio" name="timeInputMode" value="duration" onchange="toggleTimeInputMode()">
+                Manual Duration (hours)
+            </label>
 
-
-            <div>
+            <div id="timeRangeMode" style="margin: 20px 0">
                 <label>Work Date: <input type="date" id="workDate" value="" /></label>
                 <label>Time In: <input type="time" id="timeIn" /></label>
                 <label>Time Out: <input type="time" id="timeOut" /></label>
-                <input type="text" id="lunchBreak" value="1" style="display:none;" />
-                <button onclick="addWorkTime()" style="background: #1190f0; color: #fff">Add Work Time</button>
             </div>
+
+
+            <div id="durationMode" style="display:none; margin: 20px 0;">
+                <label>Duration (hours, can be negative): <input type="number" id="manualDuration" step="0.25"
+                        placeholder="e.g., 8 or -8" /></label>
+            </div>
+            <input type="text" id="lunchBreak" value="1" style="display:none;" />
+            <button onclick="addWorkTime()" style="background: #1190f0; color: #fff">Add Work Time</button>
             <div id="workTimeByDay"></div>
             <button onclick="resetWorkTimes()" style="margin-top: 20px; background: #e74c3c; color: #fff"
-                class="btn">Reset Work Times</button>
-        </section>
+                class="btn">Reset Work
+                Times</button>
     </div>
+
+    </section>
     <div id="timesheetTab" class="tab-content">
         <section id="timesheetSection" class="section">
             <h2>Timesheet</h2>
@@ -1152,27 +1177,65 @@
                 }
             });
         }
-        let flexiBase = parseFloat(localStorage.getItem("flexiBase") || "159.75");
+        let flexiBase = 159.75;  // Always reset to 159.75
+        localStorage.setItem("flexiBase", "159.75");
+        let totalFlexiHours = 159.75; // Track current total flexi hours
+        let flexiDeduction = parseFloat(localStorage.getItem("flexiDeduction") || "0");
 
         function saveFlexiBase() {
             localStorage.setItem("flexiBase", flexiBase);
+            localStorage.setItem("totalFlexiHours", totalFlexiHours.toString());
         }
+
         function calculateFlexi() {
             let flexiChange = 0;
 
             workTimes.forEach(w => {
-                if (w.duration > 0) { // ✨ chỉ tính những ngày có giờ làm
-                    const diff = w.duration - 8;  // chuẩn 8h mỗi ngày
+                if (w.duration !== 0) {
+                    let diff;
+                    if (w.duration < 0) {
+                        // Negative duration = leave hours, use directly
+                        diff = w.duration;
+                    } else {
+                        // Positive duration = work hours, compare with 8h standard
+                        diff = w.duration - 8;
+                    }
                     flexiChange += diff;
                 }
             });
 
-            const totalFlexi = flexiBase + flexiChange;
+            totalFlexiHours = flexiBase + flexiChange;
+            localStorage.setItem("totalFlexiHours", totalFlexiHours.toString());
 
-            document.getElementById("flexiValue").innerText = totalFlexi.toFixed(2) + "h";
+            // Debug log
+            console.log(`Flexi: Base=${flexiBase}, Change=${flexiChange}, Total=${totalFlexiHours}`);
+
+            document.getElementById("flexiValue").innerText = totalFlexiHours.toFixed(2) + "h";
         }
 
+        function editFlexiBase() {
+            const currentValue = flexiBase;
+            const newValue = prompt(`Current Flexi Base: ${currentValue}h\n\nEnter new Flexi Base value:`, currentValue);
 
+            if (newValue === null) return; // User cancelled
+
+            const parsedValue = parseFloat(newValue);
+            if (isNaN(parsedValue)) {
+                alert("Please enter a valid number!");
+                return;
+            }
+
+            flexiBase = parsedValue;
+            localStorage.setItem("flexiBase", flexiBase.toString());
+            calculateFlexi();
+            alert(`Flexi Base updated to ${flexiBase}h`);
+        }
+
+        function toggleTimeInputMode() {
+            const mode = document.querySelector('input[name="timeInputMode"]:checked').value;
+            document.getElementById("timeRangeMode").style.display = mode === "timerange" ? "block" : "none";
+            document.getElementById("durationMode").style.display = mode === "duration" ? "block" : "none";
+        }
 
 
         const assetTypesRequireHours = ["Web content editing", "Graphics Production", "PDF production & editing request", "Print material design request", "Video creation, editing & upload request"];
@@ -2190,8 +2253,7 @@
         }
         function addWorkTime() {
             const dateStr = document.getElementById("workDate").value;
-            const timeInStr = document.getElementById("timeIn").value;
-            const timeOutStr = document.getElementById("timeOut").value;
+            const mode = document.querySelector('input[name="timeInputMode"]:checked').value;
 
             if (!dateStr) {
                 alert("Please enter the work date.");
@@ -2200,16 +2262,35 @@
 
             let duration = 0;
 
-            if (timeInStr && timeOutStr) {
-                const timeIn = parseTime(timeInStr);
-                const timeOut = parseTime(timeOutStr);
-                if (timeOut <= timeIn) {
-                    alert("Time out must be later than time in.");
+            if (mode === "timerange") {
+                // Time In/Out mode
+                const timeInStr = document.getElementById("timeIn").value;
+                const timeOutStr = document.getElementById("timeOut").value;
+
+                if (timeInStr && timeOutStr) {
+                    const timeIn = parseTime(timeInStr);
+                    const timeOut = parseTime(timeOutStr);
+                    if (timeOut <= timeIn) {
+                        alert("Time out must be later than time in.");
+                        return;
+                    }
+                    duration = (timeOut - timeIn) / 3600000;
+                    duration -= hhmmToDecimalHours("01:00");
+                    duration = Math.max(duration, 0);
+                }
+            } else {
+                // Manual duration mode
+                const manualDurationStr = document.getElementById("manualDuration").value;
+                if (!manualDurationStr) {
+                    alert("Please enter duration value.");
                     return;
                 }
-                duration = (timeOut - timeIn) / 3600000;
-                duration -= hhmmToDecimalHours("01:00");
-                duration = Math.max(duration, 0);
+                duration = parseFloat(manualDurationStr);
+                if (isNaN(duration)) {
+                    alert("Please enter a valid number for duration.");
+                    return;
+                }
+                // Allow negative values for leave
             }
 
             const date = new Date(dateStr);
@@ -2218,8 +2299,8 @@
             workTimes.push({
                 date: dateStr,
                 dayOfWeek,
-                timeIn: timeInStr || "",
-                timeOut: timeOutStr || "",
+                timeIn: mode === "timerange" ? document.getElementById("timeIn").value : "",
+                timeOut: mode === "timerange" ? document.getElementById("timeOut").value : "",
                 lunchBreak: "01:00",
                 duration,
             });
@@ -2228,8 +2309,10 @@
             renderWorkTimeByDay();
             calculateFlexi();
 
+            // Clear inputs
             document.getElementById("timeIn").value = "";
             document.getElementById("timeOut").value = "";
+            document.getElementById("manualDuration").value = "";
         }
 
         function decimalHoursToHM(decimalHours) {
@@ -2396,6 +2479,8 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                 correctionData,
                 grundfosTasks,
                 campaigns,
+                flexiBase,
+                totalFlexiHours,
             };
             const blob = new Blob([JSON.stringify(data, null, 2)], {
                 type: "application/json",
@@ -2440,11 +2525,21 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                     grundfosTasks = importedData.grundfosTasks || [];
                     campaigns = importedData.campaigns || [];
 
+                    // Restore flexi base and total flexi hours
+                    if (importedData.flexiBase) {
+                        flexiBase = parseFloat(importedData.flexiBase);
+                    }
+                    if (importedData.totalFlexiHours) {
+                        totalFlexiHours = parseFloat(importedData.totalFlexiHours);
+                    }
+
                     saveData();
                     renderTables();
                     renderGrundfosTasks();
+                    renderWorkTimeByDay();
                     renderCampaignSummary();
                     updateCampaignSelect();
+                    calculateFlexi();
 
                     alert("Data has been successfully imported!");
                 } catch (error) {
@@ -2466,6 +2561,8 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                 correctionData,
                 grundfosTasks,
                 campaigns,
+                flexiBase,
+                totalFlexiHours,
             };
 
             const now = new Date();
@@ -2577,10 +2674,19 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
             grundfosTasks = data.grundfosTasks || [];
             campaigns = data.campaigns || [];
 
+            // Restore flexi base and total flexi hours
+            if (data.flexiBase) {
+                flexiBase = parseFloat(data.flexiBase);
+            }
+            if (data.totalFlexiHours) {
+                totalFlexiHours = parseFloat(data.totalFlexiHours);
+            }
+
             renderTables();
             renderGrundfosTasks();
             renderCampaignSummary();
             updateCampaignSelect();
+            calculateFlexi();
         }
 
         // function downloadBackup() {
@@ -2711,6 +2817,9 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                 addNewAssetId();
             }
         });
+
+        // Initialize display on page load
+        updateFlexiDeductionDisplay();
 
     </script>
 </body>
