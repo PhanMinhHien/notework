@@ -2261,6 +2261,7 @@
             }
 
             let duration = 0;
+            let lunchBreak = "01:00";
 
             if (mode === "timerange") {
                 // Time In/Out mode
@@ -2274,9 +2275,9 @@
                         alert("Time out must be later than time in.");
                         return;
                     }
-                    duration = (timeOut - timeIn) / 3600000;
-                    duration -= hhmmToDecimalHours("01:00");
-                    duration = Math.max(duration, 0);
+                    const durationRaw = (timeOut - timeIn) / 3600000;
+                    // Calculate duration after subtracting lunch break
+                    duration = Math.max(durationRaw - hhmmToDecimalHours(lunchBreak), 0);
                 }
             } else {
                 // Manual duration mode
@@ -2301,7 +2302,7 @@
                 dayOfWeek,
                 timeIn: mode === "timerange" ? document.getElementById("timeIn").value : "",
                 timeOut: mode === "timerange" ? document.getElementById("timeOut").value : "",
-                lunchBreak: "01:00",
+                lunchBreak: lunchBreak,
                 duration,
             });
 
