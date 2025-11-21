@@ -1177,9 +1177,8 @@
                 }
             });
         }
-        let flexiBase = 159.75;  // Always reset to 159.75
-        localStorage.setItem("flexiBase", "159.75");
-        let totalFlexiHours = 159.75; // Track current total flexi hours
+        let flexiBase = parseFloat(localStorage.getItem("flexiBase") || "159.75");
+        let totalFlexiHours = parseFloat(localStorage.getItem("totalFlexiHours") || "159.75");
         let flexiDeduction = parseFloat(localStorage.getItem("flexiDeduction") || "0");
 
         function saveFlexiBase() {
