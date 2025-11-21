@@ -560,7 +560,6 @@
             </label>
 
             <div id="timeRangeMode" style="margin: 20px 0">
-
                 <label>Time In: <input type="time" id="timeIn" /></label>
                 <label>Time Out: <input type="time" id="timeOut" /></label>
             </div>
@@ -2417,7 +2416,7 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                     if (count === idx) {
                         const timeIn = prompt("Enter new Time In (HH:MM):", workTimes[i].timeIn);
                         const timeOut = prompt("Enter new Time Out (HH:MM):", workTimes[i].timeOut);
-                        const lunchBreak = prompt("Enter new Lunch Break (in hours):", workTimes[i].lunchBreak);
+                        const lunchBreak = prompt("Enter new Lunch Break (HH:MM):", workTimes[i].lunchBreak || "01:00");
                         if (!timeIn || !timeOut) {
                             alert("Both times are required to update.");
                             return;
@@ -2429,13 +2428,23 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                             return;
                         }
                         let duration = (parsedOut - parsedIn) / 3600000;
-                        if (lunchBreak && !isNaN(lunchBreak)) {
-                            duration -= parseFloat(lunchBreak);
+                        // Convert lunch break from HH:MM format to decimal hours and subtract
+                        let lunchBreakDecimal = 1; // default 1 hour
+                        if (lunchBreak) {
+                            const regex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
+                            if (regex.test(lunchBreak)) {
+                                lunchBreakDecimal = hhmmToDecimalHours(lunchBreak);
+                            } else {
+                                alert("Invalid lunch break format! Use HH:MM. Setting to 01:00");
+                                lunchBreak = "01:00";
+                                lunchBreakDecimal = 1;
+                            }
                         }
+                        duration -= lunchBreakDecimal;
                         duration = Math.max(duration, 0);
                         workTimes[i].timeIn = timeIn;
                         workTimes[i].timeOut = timeOut;
-                        workTimes[i].lunchBreak = lunchBreak || "";
+                        workTimes[i].lunchBreak = lunchBreak || "01:00";
                         workTimes[i].duration = duration;
                         saveData();
                         renderWorkTimeByDay();
