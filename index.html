@@ -976,9 +976,23 @@
         });
         document.addEventListener("DOMContentLoaded", updateCampaignSelect);
         function getWeekFromDate(dateStr) {
-            const [d, m, y] = dateStr.split("/").map(Number);
-            const date = new Date(y, m - 1, d);
-            const firstDay = new Date(y, 0, 1);
+            let date;
+
+            // Handle both YYYY-MM-DD and DD/MM/YYYY formats
+            if (dateStr.includes("-")) {
+                // Format: YYYY-MM-DD (from HTML input)
+                const [y, m, d] = dateStr.split("-").map(Number);
+                date = new Date(y, m - 1, d);
+            } else if (dateStr.includes("/")) {
+                // Format: DD/MM/YYYY (legacy format)
+                const [d, m, y] = dateStr.split("/").map(Number);
+                date = new Date(y, m - 1, d);
+            } else {
+                console.error("Invalid date format:", dateStr);
+                return "Week NaN";
+            }
+
+            const firstDay = new Date(date.getFullYear(), 0, 1);
             const pastDays = Math.floor((date - firstDay) / 86400000);
             const weekNum = Math.ceil((pastDays + firstDay.getDay() + 1) / 7);
             return `Week ${weekNum}`;
@@ -1182,7 +1196,7 @@
         let flexiDeduction = parseFloat(localStorage.getItem("flexiDeduction") || "0");
 
         function saveFlexiBase() {
-            localStorage.setItem("flexiBase", flexiBase);
+            localStorage.setItem("flexiBase", flexiBase.toString());
             localStorage.setItem("totalFlexiHours", totalFlexiHours.toString());
         }
 
@@ -1204,6 +1218,7 @@
             });
 
             totalFlexiHours = flexiBase + flexiChange;
+            localStorage.setItem("flexiBase", flexiBase.toString());
             localStorage.setItem("totalFlexiHours", totalFlexiHours.toString());
 
             // Debug log
@@ -2692,11 +2707,18 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                 totalFlexiHours = parseFloat(data.totalFlexiHours);
             }
 
+            // Save all data to localStorage
+            saveData();
+            saveFlexiBase();
+
             renderTables();
             renderGrundfosTasks();
             renderCampaignSummary();
             updateCampaignSelect();
+            renderWorkTimeByDay();
             calculateFlexi();
+
+            alert("Backup has been loaded successfully!");
         }
 
         // function downloadBackup() {
@@ -2733,6 +2755,8 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                 correctionData,
                 grundfosTasks,
                 campaigns,
+                flexiBase,
+                totalFlexiHours,
             };
 
             const now = new Date();
@@ -2777,33 +2801,50 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
         //     }
         // }
         function resetWorkTimes() {
-            if (!confirm("Reset work times? This will save last week's flexi.")) return;
+            if (!confirm("Reset work times? This will delete all current week's data and save previous weeks' flexi to base.")) return;
 
             const today = new Date();
-            const currentWeek = getWeekFromDate(
-                `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`
+            const currentWeekStr = getWeekFromDate(
+                `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`
             );
+            const currentWeek = parseInt(currentWeekStr.replace("Week ", ""));
 
-            let flexiChange = 0;
+            let flexiChangeAllWeeks = 0;
 
+            console.log("Reset starting - currentWeek:", currentWeek);
+            console.log("flexiBase before:", flexiBase);
+
+            // Calculate flexi from ALL workTimes before clearing
             workTimes.forEach(w => {
-                const weekOfDay = getWeekFromDate(w.date);
-                const diff = w.duration - 8;
+                const weekStr = getWeekFromDate(w.date);
+                const week = parseInt(weekStr.replace("Week ", ""));
+                const diff = w.duration < 0 ? w.duration : w.duration - 8;
 
-                if (weekOfDay < currentWeek) {
-                    flexiChange += diff;
-                } else if (weekOfDay === currentWeek) {
-                    flexiChange -= diff;
+                console.log(`Processing ${w.date} - week: ${week}, diff: ${diff}`);
+
+                if (week < currentWeek) {
+                    // Previous weeks: add their flexi to base
+                    flexiChangeAllWeeks += diff;
                 }
+                // Current week entries will be deleted without affecting flexi
             });
 
-            flexiBase += flexiChange;
+            console.log("flexiChangeAllWeeks:", flexiChangeAllWeeks);
+
+            // Update flexiBase with previous weeks' flexi ONLY
+            flexiBase += flexiChangeAllWeeks;
             saveFlexiBase();
 
+            console.log("flexiBase after save:", flexiBase);
+            console.log("localStorage flexiBase:", localStorage.getItem("flexiBase"));
+
+            // Delete ALL workTimes (both previous and current week)
             workTimes = [];
             saveData();
             renderWorkTimeByDay();
             calculateFlexi();
+
+            console.log("Reset completed");
         }
 
 
@@ -2827,9 +2868,6 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                 addNewAssetId();
             }
         });
-
-        // Initialize display on page load
-        updateFlexiDeductionDisplay();
 
     </script>
 </body>
