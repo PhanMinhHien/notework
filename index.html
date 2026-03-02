@@ -976,27 +976,29 @@
         });
         document.addEventListener("DOMContentLoaded", updateCampaignSelect);
         function getWeekFromDate(dateStr) {
-            let date;
+    let date;
 
-            // Handle both YYYY-MM-DD and DD/MM/YYYY formats
-            if (dateStr.includes("-")) {
-                // Format: YYYY-MM-DD (from HTML input)
-                const [y, m, d] = dateStr.split("-").map(Number);
-                date = new Date(y, m - 1, d);
-            } else if (dateStr.includes("/")) {
-                // Format: DD/MM/YYYY (legacy format)
-                const [d, m, y] = dateStr.split("/").map(Number);
-                date = new Date(y, m - 1, d);
-            } else {
-                console.error("Invalid date format:", dateStr);
-                return "Week NaN";
-            }
+    // Handle both YYYY-MM-DD and DD/MM/YYYY formats
+    if (dateStr.includes("-")) {
+        // Format: YYYY-MM-DD (from HTML input)
+        const [y, m, d] = dateStr.split("-").map(Number);
+        date = new Date(y, m - 1, d);
+    } else if (dateStr.includes("/")) {
+        // Format: DD/MM/YYYY (legacy format)
+        const [d, m, y] = dateStr.split("/").map(Number);
+        date = new Date(y, m - 1, d);
+    } else {
+        console.error("Invalid date format:", dateStr);
+        return "Week NaN";
+    }
 
-            const firstDay = new Date(date.getFullYear(), 0, 1);
-            const pastDays = Math.floor((date - firstDay) / 86400000);
-            const weekNum = Math.ceil((pastDays + firstDay.getDay() + 1) / 7);
-            return `Week ${weekNum}`;
-        }
+    const firstDay = new Date(date.getFullYear(), 0, 1);
+    const pastDays = Math.floor((date - firstDay) / 86400000);
+    const weekNum = Math.ceil((pastDays + firstDay.getDay() + 1) / 7);
+
+    // Return both week and year to ensure correct sorting
+    return `${date.getFullYear()}-W${weekNum}`;
+}
         function editGrundfosHoursCell(td, date) {
             const current = td.textContent.trim();
             if (td.querySelector("input")) return;
@@ -1074,8 +1076,18 @@
                 if (!groupedByWeek[week]) groupedByWeek[week] = [];
                 groupedByWeek[week].push({ ...task, floatHours });
             });
-            const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => b.localeCompare(a));
-            const currentWeek = getWeekFromDate(new Date().toLocaleDateString("en-GB"));
+const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
+    // Extract year and week number from "YYYY-WX" format
+    const [yearA, weekA] = a.split('-W').map(Number);
+    const [yearB, weekB] = b.split('-W').map(Number);
+
+    // Compare by year first, then by week number
+    if (yearA !== yearB) {
+        return yearB - yearA;  // Sort by year descending
+    } else {
+        return weekB - weekA;  // Sort by week number descending
+    }
+});            const currentWeek = getWeekFromDate(new Date().toLocaleDateString("en-GB"));
             sortedWeeks.forEach((week) => {
                 if (!showAllWeeks && week !== currentWeek) return;
                 const tasks = groupedByWeek[week];
@@ -1141,8 +1153,19 @@
                 });
             });
             Object.keys(allSummary)
-                .sort((a, b) => b.localeCompare(a))
-                .forEach((week) => {
+    .sort((a, b) => {
+        // Extract year and week number from "YYYY-WX" format
+        const [yearA, weekA] = a.split('-W').map(Number);
+        const [yearB, weekB] = b.split('-W').map(Number);
+
+        // Compare by year first, then by week number
+        if (yearA !== yearB) {
+            return yearB - yearA;  // Sort by year descending
+        } else {
+            return weekB - weekA;  // Sort by week number descending
+        }
+    })
+    .forEach((week) => {
                     const summaryForWeek = allSummary[week];
 
                     Object.values(summaryForWeek)
