@@ -2839,8 +2839,12 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
 
             // Calculate flexi from ALL workTimes before clearing
             workTimes.forEach(w => {
-                const weekStr = getWeekFromDate(w.date);
-                const week = parseInt(weekStr.replace("Week ", ""));
+const d = new Date(w.date);
+const weekStr = getWeekFromDate(
+`${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1)
+.toString().padStart(2,'0')}/${d.getFullYear()}`
+);                
+const week = parseInt(weekStr.replace("Week ", ""));
                 const diff = w.duration < 0 ? w.duration : w.duration - 8;
 
                 console.log(`Processing ${w.date} - week: ${week}, diff: ${diff}`);
