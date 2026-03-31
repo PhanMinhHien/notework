@@ -2865,8 +2865,16 @@ const week = parseInt(weekStr.replace("Week ", ""));
             console.log("flexiBase after save:", flexiBase);
             console.log("localStorage flexiBase:", localStorage.getItem("flexiBase"));
 
-            // Delete ALL workTimes (both previous and current week)
-            workTimes = [];
+            // Delete ONLY current week's workTimes, keep previous weeks
+            workTimes = workTimes.filter(w => {
+                const d = new Date(w.date);
+                const weekStr = getWeekFromDate(
+                    `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`
+                );
+                const week = parseInt(weekStr.replace("Week ", ""));
+                return week < currentWeek; // Keep only previous weeks
+            });
+
             saveData();
             renderWorkTimeByDay();
             calculateFlexi();
