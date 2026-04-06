@@ -167,10 +167,14 @@
             right: 0;
             bottom: 0;
             background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
             z-index: 1000;
+        }
+
+        .popup-overlay:not(.hidden) {
+            display: flex;
         }
 
         .popup-overlay h3 {
@@ -185,6 +189,19 @@
             max-width: 90%;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
             text-align: left;
+        }
+
+        #archivePopup {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            z-index: 9999 !important;
+        }
+
+        .hidden {
+            display: none !important;
         }
 
         #newAssetIdInput {
@@ -392,6 +409,7 @@
                             </div>
                         </div>
                     </div>
+                   
                     <button onclick="addTicket()" style="background: #1190f0; color: #fff">Add Ticket</button>
                 </div>
                 <div class="ticket-right">
@@ -535,6 +553,13 @@
     </div>
     <div id="workTimeTab" class="tab-content">
         <section id="worktimeSection" class="section">
+             <div id="archivePopup" class="popup-overlay hidden">
+                        <div class="popup" style="width: 70%; max-height: 80vh; overflow-y: auto;">
+                            <h3>Work Time Archive (Previous Weeks)</h3>
+                            <div id="archiveContent" style="margin: 20px 0;"></div>
+                            <button style="background: #e74c3c; color: #fff" onclick="closeArchivePopup()">Close</button>
+                        </div>
+                    </div>
             <h2>Work time</h2>
             <div id="flexiDisplay" style="font-size:18px; margin:15px 0;">
                 Flexi Hours: <b id="flexiValue">0h</b>
@@ -573,8 +598,9 @@
             <button onclick="addWorkTime()" style="background: #1190f0; color: #fff">Add Work Time</button>
             <div id="workTimeByDay"></div>
             <button onclick="resetWorkTimes()" style="margin-top: 20px; background: #e74c3c; color: #fff"
-                class="btn">Reset Work
-                Times</button>
+                class="btn">Reset Work Times</button>
+            <button onclick="showArchivePopup()" style="margin-top: 20px; margin-left: 10px; background: #27ae60; color: #fff"
+                class="btn">View Archive</button>
     </div>
 
     </section>
@@ -1225,9 +1251,33 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
 
         function calculateFlexi() {
             let flexiChange = 0;
+            
+            // Get current week
+            const today = new Date();
+            const currentWeekStr = getWeekFromDate(
+                `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+            );
 
-            workTimes.forEach(w => {
-                if (w.duration !== 0) {
+            console.log("calculateFlexi - today:", today, "currentWeekStr:", currentWeekStr);
+
+            // Combine both current and archive data for calculation
+            const allWorkTimes = [...workTimes, ...workTimesArchive];
+
+            console.log("allWorkTimes count:", allWorkTimes.length);
+
+            allWorkTimes.forEach(w => {
+                const itemWeekStr = getWeekFromDate(w.date);
+                
+                console.log("Checking date:", w.date, "itemWeekStr:", itemWeekStr, "matches:", itemWeekStr === currentWeekStr, "duration:", w.duration);
+                
+                // Skip empty entries (no time data and no duration)
+                if (w.duration === 0 && !w.timeIn && !w.timeOut) {
+                    console.log("Skipping empty entry:", w.date);
+                    return;
+                }
+
+                // Only count current week's flexi
+                if (itemWeekStr === currentWeekStr && w.duration !== 0) {
                     let diff;
                     if (w.duration < 0) {
                         // Negative duration = leave hours, use directly
@@ -1236,6 +1286,7 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
                         // Positive duration = work hours, compare with 8h standard
                         diff = w.duration - 8;
                     }
+                    console.log("Adding to flexiChange:", diff);
                     flexiChange += diff;
                 }
             });
@@ -1280,6 +1331,8 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
         let mainData = JSON.parse(localStorage.getItem("mainData")) || [];
         let loggedData = JSON.parse(localStorage.getItem("loggedData")) || [];
         let workTimes = JSON.parse(localStorage.getItem("workTimes")) || [];
+        // Also load archived previous weeks data for calculation purposes only
+        let workTimesArchive = JSON.parse(localStorage.getItem("workTimes_archive")) || [];
         let correctionData = JSON.parse(localStorage.getItem("correctionData")) || [];
         let grundfosTasks = JSON.parse(localStorage.getItem("grundfosTasks")) || [];
         let campaigns = JSON.parse(localStorage.getItem("campaigns")) || [];
@@ -1290,7 +1343,9 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
         function saveData() {
             localStorage.setItem("mainData", JSON.stringify(mainData));
             localStorage.setItem("loggedData", JSON.stringify(loggedData));
+            // Save current week data separately from archive
             localStorage.setItem("workTimes", JSON.stringify(workTimes));
+            localStorage.setItem("workTimes_archive", JSON.stringify(workTimesArchive));
             localStorage.setItem("correctionData", JSON.stringify(correctionData));
             localStorage.setItem("grundfosTasks", JSON.stringify(grundfosTasks));
             localStorage.setItem("campaigns", JSON.stringify(campaigns));
@@ -2237,6 +2292,119 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
             document.getElementById("popupOverlay").style.display = "none";
             editIndex = null;
         }
+        
+        function showArchivePopup() {
+            const archiveContent = document.getElementById("archiveContent");
+            console.log("showArchivePopup called, workTimesArchive:", workTimesArchive);
+            
+            // Get current week
+            const today = new Date();
+            const currentWeekStr = getWeekFromDate(
+                `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+            );
+            console.log("currentWeekStr:", currentWeekStr);
+            
+            // Filter only previous weeks (not current week)
+            // Parse week strings to compare numerically
+            const parseWeek = (weekStr) => {
+                const [year, week] = weekStr.split('-W').map(Number);
+                return year * 100 + week;  // YYYYWW format for numeric comparison
+            };
+            
+            const currentWeekNum = parseWeek(currentWeekStr);
+            const previousWeeksData = workTimesArchive.filter(item => {
+                const itemWeekStr = getWeekFromDate(item.date);
+                const itemWeekNum = parseWeek(itemWeekStr);
+                const isPrevious = itemWeekNum < currentWeekNum;
+                console.log("Checking:", item.date, "week:", itemWeekStr, "itemWeekNum:", itemWeekNum, "currentWeekNum:", currentWeekNum, "isPrevious:", isPrevious);
+                return isPrevious;
+            });
+            
+            console.log("previousWeeksData.length:", previousWeeksData.length);
+            console.log("previousWeeksData:", previousWeeksData);
+            
+            if (!previousWeeksData || previousWeeksData.length === 0) {
+                archiveContent.innerHTML = "<p style='color: #999;'>No archived data from previous weeks yet.</p>";
+                const popup = document.getElementById("archivePopup");
+                popup.classList.remove("hidden");
+                return;
+            }
+            
+            // Group by week
+            const groupedByWeek = {};
+            previousWeeksData.forEach(item => {
+                const weekStr = getWeekFromDate(item.date);
+                console.log("Processing archive item:", item.date, "week:", weekStr);
+                if (!groupedByWeek[weekStr]) {
+                    groupedByWeek[weekStr] = [];
+                }
+                groupedByWeek[weekStr].push(item);
+            });
+            
+            let html = "<div style='margin: 20px 0;'>";
+            
+            try {
+                // Sort weeks in descending order
+                Object.keys(groupedByWeek).sort((a, b) => {
+                    const [yearA, weekA] = a.split('-W').map(Number);
+                    const [yearB, weekB] = b.split('-W').map(Number);
+                    if (yearA !== yearB) return yearB - yearA;
+                    return weekB - weekA;
+                }).forEach(week => {
+                    const items = groupedByWeek[week];
+                    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                    
+                    html += `<h4 style='margin-top: 15px; border-bottom: 2px solid #2980b9; padding-bottom: 5px;'>${week}</h4>`;
+                    html += "<table style='width: 100%; border-collapse: collapse; margin-bottom: 20px;'>";
+                    html += "<thead><tr>";
+                    html += "<th style='border: 1px solid #ccc; padding: 8px; text-align: left;'>Date</th>";
+                    html += "<th style='border: 1px solid #ccc; padding: 8px; text-align: left;'>Day</th>";
+                    html += "<th style='border: 1px solid #ccc; padding: 8px; text-align: left;'>Time In</th>";
+                    html += "<th style='border: 1px solid #ccc; padding: 8px; text-align: left;'>Time Out</th>";
+                    html += "<th style='border: 1px solid #ccc; padding: 8px; text-align: left;'>Duration (h)</th>";
+                    html += "</tr></thead>";
+                    html += "<tbody>";
+                    
+                    items.forEach(item => {
+                        const dayName = days[item.dayOfWeek];
+                        html += "<tr>";
+                        html += `<td style='border: 1px solid #ccc; padding: 8px;'>${item.date}</td>`;
+                        html += `<td style='border: 1px solid #ccc; padding: 8px;'>${dayName}</td>`;
+                        html += `<td style='border: 1px solid #ccc; padding: 8px;'>${item.timeIn || "-"}</td>`;
+                        html += `<td style='border: 1px solid #ccc; padding: 8px;'>${item.timeOut || "-"}</td>`;
+                        html += `<td style='border: 1px solid #ccc; padding: 8px;'>${decimalHoursToHM(item.duration)}</td>`;
+                        html += "</tr>";
+                    });
+                    
+                    html += "</tbody></table>";
+                });
+                
+                html += "</div>";
+                console.log("Generated HTML length:", html.length);
+                const popup = document.getElementById("archivePopup");
+                const archiveContentDiv = document.getElementById("archiveContent");
+                console.log("archivePopup element:", popup);
+                console.log("archiveContent element:", archiveContentDiv);
+                if (!popup) {
+                    console.error("archivePopup element not found!");
+                    alert("Error: archivePopup element not found in HTML");
+                    return;
+                }
+                archiveContent.innerHTML = html;
+                console.log("Setting popup display to flex...");
+                popup.classList.remove("hidden");
+                console.log("Popup display after setting:", window.getComputedStyle(popup).display);
+            } catch (error) {
+                console.error("Error generating archive HTML:", error);
+                archiveContent.innerHTML = "<p style='color: #e74c3c;'>Error: " + error.message + "</p>";
+                document.getElementById("archivePopup").classList.remove("hidden");
+            }
+        }
+        
+        function closeArchivePopup() {
+            const popup = document.getElementById("archivePopup");
+            popup.classList.add("hidden");
+        }
         function moveTicket(index) {
             const item = mainData.splice(index, 1)[0];
             const selectedWeek = document.getElementById("weekSelectorToLog")?.value;
@@ -2289,8 +2457,11 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
             return h + m / 60;
         }
         function addWorkTime() {
+            console.log("addWorkTime called");
             const dateStr = document.getElementById("workDate").value;
             const mode = document.querySelector('input[name="timeInputMode"]:checked').value;
+
+            console.log("dateStr:", dateStr, "mode:", mode);
 
             if (!dateStr) {
                 alert("Please enter the work date.");
@@ -2305,9 +2476,13 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
                 const timeInStr = document.getElementById("timeIn").value;
                 const timeOutStr = document.getElementById("timeOut").value;
 
+                console.log("timeInStr:", timeInStr, "timeOutStr:", timeOutStr);
+
                 if (timeInStr && timeOutStr) {
                     const timeIn = parseTime(timeInStr);
                     const timeOut = parseTime(timeOutStr);
+                    console.log("timeIn:", timeIn, "timeOut:", timeOut);
+                    
                     if (timeOut <= timeIn) {
                         alert("Time out must be later than time in.");
                         return;
@@ -2315,10 +2490,13 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
                     const durationRaw = (timeOut - timeIn) / 3600000;
                     // Calculate duration after subtracting lunch break
                     duration = Math.max(durationRaw - hhmmToDecimalHours(lunchBreak), 0);
+                    console.log("durationRaw:", durationRaw, "duration:", duration);
                 }
             } else {
                 // Manual duration mode
                 const manualDurationStr = document.getElementById("manualDuration").value;
+                console.log("manualDurationStr:", manualDurationStr);
+                
                 if (!manualDurationStr) {
                     alert("Please enter duration value.");
                     return;
@@ -2334,14 +2512,42 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
             const date = new Date(dateStr);
             const dayOfWeek = date.getDay();
 
-            workTimes.push({
+            console.log("Adding work time - date:", dateStr, "dayOfWeek:", dayOfWeek, "duration:", duration);
+
+            const newWorkEntry = {
                 date: dateStr,
                 dayOfWeek,
                 timeIn: mode === "timerange" ? document.getElementById("timeIn").value : "",
                 timeOut: mode === "timerange" ? document.getElementById("timeOut").value : "",
                 lunchBreak: lunchBreak,
                 duration,
-            });
+            };
+
+            // Check if this date belongs to current week or previous weeks
+            const today = new Date();
+            const currentWeekStr = getWeekFromDate(
+                `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+            );
+            const entryWeekStr = getWeekFromDate(dateStr);
+
+            console.log("currentWeekStr:", currentWeekStr, "entryWeekStr:", entryWeekStr);
+
+            if (entryWeekStr === currentWeekStr) {
+                // Current week - add to workTimes
+                workTimes.push(newWorkEntry);
+                console.log("Added to workTimes");
+            } else if (entryWeekStr < currentWeekStr) {
+                // Previous week - add to archive
+                workTimesArchive.push(newWorkEntry);
+                console.log("Added to workTimesArchive");
+            } else {
+                // Future week - add to workTimes (will be archived later)
+                workTimes.push(newWorkEntry);
+                console.log("Added to workTimes (future week)");
+            }
+
+            console.log("workTimes after push:", workTimes);
+            console.log("workTimesArchive after push:", workTimesArchive);
 
             saveData();
             renderWorkTimeByDay();
@@ -2351,6 +2557,8 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
             document.getElementById("timeIn").value = "";
             document.getElementById("timeOut").value = "";
             document.getElementById("manualDuration").value = "";
+            
+            console.log("addWorkTime completed");
         }
 
         function decimalHoursToHM(decimalHours) {
@@ -2364,8 +2572,23 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
             const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
             const grouped = {};
             for (let i = 0; i < 7; i++) grouped[i] = [];
-            workTimes.forEach((item) => {
-                grouped[item.dayOfWeek].push(item);
+            
+            // Get current week
+            const today = new Date();
+            const currentWeekStr = getWeekFromDate(
+                `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+            );
+            
+            // Combine both current and archive data for display
+            const allWorkTimes = [...workTimes, ...workTimesArchive];
+            
+            // Only show current week data
+            allWorkTimes.forEach((item) => {
+                const itemWeekStr = getWeekFromDate(item.date);
+                
+                if (itemWeekStr === currentWeekStr) {
+                    grouped[item.dayOfWeek].push(item);
+                }
             });
             days.forEach((dayName, i) => {
                 if (grouped[i].length === 0) return;
@@ -2824,62 +3047,108 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
         //     }
         // }
         function resetWorkTimes() {
-            if (!confirm("Reset work times? This will delete all current week's data and save previous weeks' flexi to base.")) return;
+            console.log("resetWorkTimes() called!");
+            
+            if (!confirm("Reset work times? This will delete current week's data.")) {
+                console.log("User cancelled reset");
+                return;
+            }
 
             const today = new Date();
             const currentWeekStr = getWeekFromDate(
-                `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`
+                `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
             );
-            const currentWeek = parseInt(currentWeekStr.replace("Week ", ""));
 
-            let flexiChangeAllWeeks = 0;
+            let flexiChangeFromPreviousWeeks = 0;
 
-            console.log("Reset starting - currentWeek:", currentWeek);
+            console.log("=== RESET START ===");
+            console.log("currentWeek:", currentWeekStr);
             console.log("flexiBase before:", flexiBase);
+            console.log("workTimes.length:", workTimes.length);
+            console.log("workTimesArchive.length:", workTimesArchive.length);
 
-            // Calculate flexi from ALL workTimes before clearing
-            workTimes.forEach(w => {
-const d = new Date(w.date);
-const weekStr = getWeekFromDate(
-`${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1)
-.toString().padStart(2,'0')}/${d.getFullYear()}`
-);                
-const week = parseInt(weekStr.replace("Week ", ""));
-                const diff = w.duration < 0 ? w.duration : w.duration - 8;
+            // Combine both to check for previous weeks data
+            const allData = [...workTimes, ...workTimesArchive];
+            
+            console.log("hasDataInWorkTimes:", workTimes.length > 0);
+            
+            // Check if workTimes has current week data
+            const hasCurrentWeekData = workTimes.some(w => {
+                const itemWeekStr = getWeekFromDate(w.date);
+                return itemWeekStr === currentWeekStr;
+            });
+            
+            console.log("hasCurrentWeekData:", hasCurrentWeekData);
+            
+            // Only add flexi if resetting in next week (no current week data + archive has data)
+            if (!hasCurrentWeekData && workTimesArchive.length > 0) {
+                console.log("Reset in next week - calculate flexi from archive to add to base");
+                
+                workTimesArchive.forEach(w => {
+                    // Skip entries with no actual data (duration 0 and no time entries)
+                    if (w.duration === 0 && !w.timeIn && !w.timeOut) {
+                        console.log(`Skipping empty entry: ${w.date}`);
+                        return;
+                    }
 
-                console.log(`Processing ${w.date} - week: ${week}, diff: ${diff}`);
+                    const itemWeekStr = getWeekFromDate(w.date);
+                    
+                    // Only count from previous weeks (not current week)
+                    if (itemWeekStr < currentWeekStr) {
+                        const diff = w.duration < 0 ? w.duration : w.duration - 8;
+                        console.log(`Checking ${w.date} - week: ${itemWeekStr}, diff: ${diff}`);
+                        flexiChangeFromPreviousWeeks += diff;
+                        console.log("Added to flexiChange:", diff);
+                    }
+                });
 
-                if (week < currentWeek) {
-                    // Previous weeks: add their flexi to base
-                    flexiChangeAllWeeks += diff;
+                console.log("flexiChangeFromPreviousWeeks:", flexiChangeFromPreviousWeeks);
+
+                // Add flexi to base
+                if (flexiChangeFromPreviousWeeks !== 0) {
+                    flexiBase += flexiChangeFromPreviousWeeks;
+                    saveFlexiBase();
+                    console.log("flexiBase updated to:", flexiBase);
                 }
-                // Current week entries will be deleted without affecting flexi
+            } else if (hasCurrentWeekData) {
+                console.log("Reset in current week - NOT adding flexi (just reset)");
+            } else {
+                console.log("No data to calculate flexi from");
+            }
+
+            console.log("flexiBase after:", flexiBase);
+
+            // Keep only data from previous weeks, remove current week and future weeks
+            workTimesArchive = allData.filter(w => {
+                const itemWeekStr = getWeekFromDate(w.date);
+                // Compare weeks properly: YYYY-W14 < YYYY-W15, etc.
+                return itemWeekStr < currentWeekStr;
             });
-
-            console.log("flexiChangeAllWeeks:", flexiChangeAllWeeks);
-
-            // Update flexiBase with previous weeks' flexi ONLY
-            flexiBase += flexiChangeAllWeeks;
-            saveFlexiBase();
-
-            console.log("flexiBase after save:", flexiBase);
-            console.log("localStorage flexiBase:", localStorage.getItem("flexiBase"));
-
-            // Delete ONLY current week's workTimes, keep previous weeks
-            workTimes = workTimes.filter(w => {
-                const d = new Date(w.date);
-                const weekStr = getWeekFromDate(
-                    `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`
-                );
-                const week = parseInt(weekStr.replace("Week ", ""));
-                return week < currentWeek; // Keep only previous weeks
-            });
+            
+            console.log("New workTimesArchive.length (previous weeks only):", workTimesArchive.length);
+            console.log("workTimesArchive weeks:", [...new Set(workTimesArchive.map(w => getWeekFromDate(w.date)))]);
+            
+            // Clear current week from workTimes
+            workTimes = [];
+            console.log("New workTimes.length:", workTimes.length);
+            
+            saveData();
+            renderWorkTimeByDay();
+            calculateFlexi();
+            
+            alert("Work times reset successfully!");
+            console.log("=== RESET END ===")
+            // Clear current week data
+            workTimes = [];
+            
+            console.log("After reset - workTimes.length:", workTimes.length);
+            console.log("After reset - workTimesArchive.length:", workTimesArchive.length);
 
             saveData();
             renderWorkTimeByDay();
             calculateFlexi();
 
-            console.log("Reset completed");
+            console.log("=== RESET END ===");
         }
 
 
