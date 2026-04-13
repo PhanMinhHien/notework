@@ -2566,27 +2566,30 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
             const m = Math.round((decimalHours - h) * 60);
             return `${h}:${m.toString().padStart(2, "0")}`;
         }
-        function renderWorkTimeByDay() {
+        function renderWorkTimeByDay(weekToRender = null) {
             const container = document.getElementById("workTimeByDay");
             container.innerHTML = "";
             const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
             const grouped = {};
             for (let i = 0; i < 7; i++) grouped[i] = [];
             
-            // Get current week
-            const today = new Date();
-            const currentWeekStr = getWeekFromDate(
-                `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-            );
+            // Get week to render (either specified or current week)
+            let renderWeek = weekToRender;
+            if (!renderWeek) {
+                const today = new Date();
+                renderWeek = getWeekFromDate(
+                    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+                );
+            }
             
             // Combine both current and archive data for display
             const allWorkTimes = [...workTimes, ...workTimesArchive];
             
-            // Only show current week data
+            // Show data for the specified week
             allWorkTimes.forEach((item) => {
                 const itemWeekStr = getWeekFromDate(item.date);
                 
-                if (itemWeekStr === currentWeekStr) {
+                if (itemWeekStr === renderWeek) {
                     grouped[item.dayOfWeek].push(item);
                 }
             });
@@ -2747,6 +2750,7 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                 mainData,
                 loggedData,
                 workTimes,
+                workTimesArchive,
                 correctionData,
                 grundfosTasks,
                 campaigns,
@@ -2783,6 +2787,7 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                     mainData = importedData.mainData || [];
                     loggedData = importedData.loggedData || [];
                     workTimes = importedData.workTimes || [];
+                    workTimesArchive = importedData.workTimesArchive || [];
                     if (Array.isArray(importedData.correctionData) && importedData.correctionData.length > 0) {
                         correctionData = importedData.correctionData;
                         renderTables();
@@ -2941,11 +2946,12 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
             mainData = data.mainData || [];
             loggedData = data.loggedData || [];
             workTimes = data.workTimes || [];
+            workTimesArchive = data.workTimesArchive || [];
             correctionData = data.correctionData || [];
             grundfosTasks = data.grundfosTasks || [];
             campaigns = data.campaigns || [];
 
-            // Restore flexi base and total flexi hours
+            // Restore flexi base and total flexi hours (keep saved values, don't recalculate)
             if (data.flexiBase) {
                 flexiBase = parseFloat(data.flexiBase);
             }
@@ -2957,12 +2963,18 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
             saveData();
             saveFlexiBase();
 
+            // Get the week from restored workTimes to render
+            let weekToRender = null;
+            if (workTimes.length > 0) {
+                weekToRender = getWeekFromDate(workTimes[0].date);
+            }
+
             renderTables();
             renderGrundfosTasks();
             renderCampaignSummary();
             updateCampaignSelect();
-            renderWorkTimeByDay();
-            calculateFlexi();
+            renderWorkTimeByDay(weekToRender);
+            // Don't call calculateFlexi() - keep the saved flexi value from backup
 
             alert("Backup has been loaded successfully!");
         }
@@ -2998,6 +3010,7 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                 mainData,
                 loggedData,
                 workTimes,
+                workTimesArchive,
                 correctionData,
                 grundfosTasks,
                 campaigns,
