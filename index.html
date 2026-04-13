@@ -2643,6 +2643,83 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
             });
         }
 
+        function renderAllWorkTimesFromBackup() {
+            const container = document.getElementById("workTimeByDay");
+            container.innerHTML = "";
+            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            
+            // Use only workTimes from backup (don't mix with archive)
+            if (workTimes.length === 0) {
+                container.innerHTML = "<p>No work time data in this backup.</p>";
+                return;
+            }
+            
+            // Group all data by week, then by day
+            const weekGroups = {};
+            workTimes.forEach((item) => {
+                const week = getWeekFromDate(item.date);
+                if (!weekGroups[week]) {
+                    weekGroups[week] = {};
+                    for (let i = 0; i < 7; i++) weekGroups[week][i] = [];
+                }
+                weekGroups[week][item.dayOfWeek].push(item);
+            });
+            
+            // Sort weeks and render each week
+            const sortedWeeks = Object.keys(weekGroups).sort();
+            sortedWeeks.forEach((week) => {
+                const weekContainer = document.createElement("div");
+                weekContainer.style.marginBottom = "30px";
+                weekContainer.style.padding = "15px";
+                weekContainer.style.border = "1px solid #ccc";
+                weekContainer.innerHTML = `<h2>Week: ${week}</h2>`;
+                
+                const grouped = weekGroups[week];
+                days.forEach((dayName, i) => {
+                    if (grouped[i].length === 0) return;
+                    
+                    const total = grouped[i].reduce((sum, w) => sum + w.duration, 0);
+                    const dayBlock = document.createElement("div");
+                    dayBlock.style.marginBottom = "20px";
+                    dayBlock.innerHTML = `<h3>${dayName} - Total: ${decimalHoursToHM(total)} hours</h3>`;
+                    
+                    const table = document.createElement("table");
+                    table.style.width = "100%";
+                    table.style.borderCollapse = "collapse";
+                    table.innerHTML = `<thead>
+<tr>
+<th>Date</th>
+<th>Time In</th>
+<th>Time Out</th>
+<th>Lunch Break (hours)</th>
+<th>Work Duration (hours)</th>
+<th>Flexi (hours)</th>
+</tr>
+</thead>
+<tbody>
+${grouped[i]
+                        .map((w) => {
+                            const flexiDay = w.duration > 0 ? w.duration - 8 : 0;
+                            return `
+<tr>
+<td>${w.date}</td>
+<td>${w.timeIn || "-"}</td>
+<td>${w.timeOut || "-"}</td>
+<td>${w.lunchBreak || "01:00"}</td>
+<td>${decimalHoursToHM(w.duration)}</td>
+<td>${flexiDay.toFixed(2)}</td>
+</tr>`;
+                        })
+                        .join("")}
+</tbody>`;
+                    dayBlock.appendChild(table);
+                    weekContainer.appendChild(dayBlock);
+                });
+                
+                container.appendChild(weekContainer);
+            });
+        }
+
         function updateLunchBreak(dayOfWeek, idx, value) {
             const regex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
             if (!regex.test(value)) {
@@ -2963,17 +3040,11 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
             saveData();
             saveFlexiBase();
 
-            // Get the week from restored workTimes to render
-            let weekToRender = null;
-            if (workTimes.length > 0) {
-                weekToRender = getWeekFromDate(workTimes[0].date);
-            }
-
             renderTables();
             renderGrundfosTasks();
             renderCampaignSummary();
             updateCampaignSelect();
-            renderWorkTimeByDay(weekToRender);
+            renderAllWorkTimesFromBackup();
             // Don't call calculateFlexi() - keep the saved flexi value from backup
 
             alert("Backup has been loaded successfully!");
