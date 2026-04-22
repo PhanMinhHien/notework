@@ -2499,10 +2499,24 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                     count++;
                     if (count === idx) {
                         if (confirm("Are you sure you want to delete this item?")) {
+                            // Check if this item is from current week
+                            const today = new Date();
+                            const currentWeekStr = getWeekFromDate(
+                                `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+                            );
+                            
+                            const itemDate = workTimes[i].date;
+                            const itemWeekStr = getWeekFromDate(itemDate);
+                            const isCurrentWeek = itemWeekStr === currentWeekStr;
+                            
                             workTimes.splice(i, 1);
                             saveData();
                             renderWorkTimeByDay();
-                            calculateFlexi();
+                            
+                            // Only recalculate flexi if deleting from current week
+                            if (isCurrentWeek) {
+                                calculateFlexi();
+                            }
                         }
                         break;
                     }
@@ -2824,62 +2838,43 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
         //     }
         // }
         function resetWorkTimes() {
-            if (!confirm("Reset work times? This will delete all current week's data and save previous weeks' flexi to base.")) return;
+            const confirmMsg = `Reset work times?\n\n- Resetting PAST weeks: Save flexi to base\n- Resetting CURRENT week: Delete all work data and flexi for this week`;
+            if (!confirm(confirmMsg)) return;
 
             const today = new Date();
             const currentWeekStr = getWeekFromDate(
-                `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`
+                `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
             );
-            const currentWeek = parseInt(currentWeekStr.replace("Week ", ""));
 
-            let flexiChangeAllWeeks = 0;
-
-            console.log("Reset starting - currentWeek:", currentWeek);
+            console.log("Reset starting - currentWeek:", currentWeekStr);
             console.log("flexiBase before:", flexiBase);
+            console.log("workTimes before:", workTimes.length);
 
-            // Calculate flexi from ALL workTimes before clearing
-            workTimes.forEach(w => {
-const d = new Date(w.date);
-const weekStr = getWeekFromDate(
-`${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1)
-.toString().padStart(2,'0')}/${d.getFullYear()}`
-);                
-const week = parseInt(weekStr.replace("Week ", ""));
+            // Separate workTimes into previous weeks and current week
+            const previousWeeksWorkTimes = workTimes.filter(w => getWeekFromDate(w.date) < currentWeekStr);
+            const currentWeekWorkTimes = workTimes.filter(w => getWeekFromDate(w.date) === currentWeekStr);
+
+            // Calculate flexi from previous weeks and add to base
+            let flexiFromPreviousWeeks = 0;
+            previousWeeksWorkTimes.forEach(w => {
                 const diff = w.duration < 0 ? w.duration : w.duration - 8;
-
-                console.log(`Processing ${w.date} - week: ${week}, diff: ${diff}`);
-
-                if (week < currentWeek) {
-                    // Previous weeks: add their flexi to base
-                    flexiChangeAllWeeks += diff;
-                }
-                // Current week entries will be deleted without affecting flexi
+                flexiFromPreviousWeeks += diff;
+                console.log(`Previous week - ${w.date}: diff=${diff}`);
             });
 
-            console.log("flexiChangeAllWeeks:", flexiChangeAllWeeks);
-
-            // Update flexiBase with previous weeks' flexi ONLY
-            flexiBase += flexiChangeAllWeeks;
+            flexiBase += flexiFromPreviousWeeks;
             saveFlexiBase();
 
+            console.log("flexiFromPreviousWeeks:", flexiFromPreviousWeeks);
             console.log("flexiBase after save:", flexiBase);
-            console.log("localStorage flexiBase:", localStorage.getItem("flexiBase"));
 
-            // Delete ONLY current week's workTimes, keep previous weeks
-            workTimes = workTimes.filter(w => {
-                const d = new Date(w.date);
-                const weekStr = getWeekFromDate(
-                    `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`
-                );
-                const week = parseInt(weekStr.replace("Week ", ""));
-                return week < currentWeek; // Keep only previous weeks
-            });
-
+            // Delete ALL workTimes (both previous and current week)
+            workTimes = [];
             saveData();
             renderWorkTimeByDay();
             calculateFlexi();
 
-            console.log("Reset completed");
+            console.log("Reset completed - all workTimes deleted");
         }
 
 
