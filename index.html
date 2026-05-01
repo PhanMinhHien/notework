@@ -1236,9 +1236,14 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
 
         function calculateFlexi() {
             let flexiChange = 0;
+            
+            // Get current week to only count this week's hours
+            const selectedDateStr = document.getElementById("workDate").value;
+            const currentWeekStr = getWeekFromDate(selectedDateStr);
 
             workTimes.forEach(w => {
-                if (w.duration !== 0 && !w.isOT) {
+                // Only count hours from current week that are not OT
+                if (w.duration !== 0 && !w.isOT && getWeekFromDate(w.date) === currentWeekStr) {
                     let diff;
                     if (w.duration < 0) {
                         // Negative duration = leave hours, use directly
@@ -1291,6 +1296,8 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
         let mainData = JSON.parse(localStorage.getItem("mainData")) || [];
         let loggedData = JSON.parse(localStorage.getItem("loggedData")) || [];
         let workTimes = JSON.parse(localStorage.getItem("workTimes")) || [];
+        // Ensure all workTimes items have isOT property (for backward compatibility)
+        workTimes = workTimes.map(w => ({...w, isOT: w.isOT ?? false}));
         let correctionData = JSON.parse(localStorage.getItem("correctionData")) || [];
         let grundfosTasks = JSON.parse(localStorage.getItem("grundfosTasks")) || [];
         let campaigns = JSON.parse(localStorage.getItem("campaigns")) || [];
@@ -2531,23 +2538,27 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                     count++;
                     if (count === idx) {
                         if (confirm("Are you sure you want to delete this item?")) {
-                            // Check if this item is from current week
-                            const today = new Date();
-                            const currentWeekStr = getWeekFromDate(
-                                `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-                            );
+                            // Check if this item is from current week using selected date
+                            const selectedDateStr = document.getElementById("workDate").value;
+                            const currentWeekStr = getWeekFromDate(selectedDateStr);
                             
                             const itemDate = workTimes[i].date;
                             const itemWeekStr = getWeekFromDate(itemDate);
                             const isCurrentWeek = itemWeekStr === currentWeekStr;
+                            const isOT = workTimes[i].isOT;
+                            
+                            console.log(`Delete - itemDate: ${itemDate}, itemWeek: ${itemWeekStr}, currentWeek: ${currentWeekStr}, isCurrentWeek: ${isCurrentWeek}, isOT: ${isOT}`);
                             
                             workTimes.splice(i, 1);
                             saveData();
                             renderWorkTimeByDay();
                             
-                            // Only recalculate flexi if deleting from current week
-                            if (isCurrentWeek) {
+                            // Only recalculate flexi if deleting from current week and item is NOT OT
+                            if (isCurrentWeek && !isOT) {
+                                console.log("Recalculating flexi after delete");
                                 calculateFlexi();
+                            } else {
+                                console.log("NOT recalculating flexi - isCurrentWeek:" + isCurrentWeek + ", isOT:" + isOT);
                             }
                         }
                         break;
@@ -2606,12 +2617,16 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                     mainData = importedData.mainData || [];
                     loggedData = importedData.loggedData || [];
                     workTimes = importedData.workTimes || [];
+                    // Ensure all workTimes items have isOT property (for backward compatibility)
+                    workTimes = workTimes.map(w => ({...w, isOT: w.isOT ?? false}));
                     if (Array.isArray(importedData.correctionData) && importedData.correctionData.length > 0) {
                         correctionData = importedData.correctionData;
                         renderTables();
                     }
                     if (Array.isArray(importedData.workTimes) && importedData.workTimes.length > 0) {
                         workTimes = importedData.workTimes;
+                        // Ensure all workTimes items have isOT property (for backward compatibility)
+                        workTimes = workTimes.map(w => ({...w, isOT: w.isOT ?? false}));
                         renderWorkTimeByDay();
                         calculateFlexi();
                     }
@@ -2764,6 +2779,8 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
             mainData = data.mainData || [];
             loggedData = data.loggedData || [];
             workTimes = data.workTimes || [];
+            // Ensure all workTimes items have isOT property (for backward compatibility)
+            workTimes = workTimes.map(w => ({...w, isOT: w.isOT ?? false}));
             correctionData = data.correctionData || [];
             grundfosTasks = data.grundfosTasks || [];
             campaigns = data.campaigns || [];
@@ -2820,7 +2837,7 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
             const data = {
                 mainData,
                 loggedData,
-                workTimes,
+                workTimes: workTimes.map(w => ({...w, isOT: w.isOT ?? false})),  // Ensure isOT is saved
                 correctionData,
                 grundfosTasks,
                 campaigns,
@@ -2870,37 +2887,37 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
         //     }
         // }
         function resetWorkTimes() {
-            const confirmMsg = `Reset work times?\n\n- Resetting PAST weeks: Save flexi to base\n- Resetting CURRENT week: Delete all work data and flexi for this week`;
+            const confirmMsg = `Reset work times?\n\n- Resetting PAST weeks: Delete all work data\n- Resetting CURRENT week: Save flexi to base, then delete work data`;
             if (!confirm(confirmMsg)) return;
 
+            // Get actual current week (today)
             const today = new Date();
-            const currentWeekStr = getWeekFromDate(
-                `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-            );
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            const actualCurrentWeekStr = getWeekFromDate(todayStr);
 
-            console.log("Reset starting - currentWeek:", currentWeekStr);
+            console.log("Reset starting - actualCurrentWeek:", actualCurrentWeekStr);
             console.log("flexiBase before:", flexiBase);
             console.log("workTimes before:", workTimes.length);
 
-            // Separate workTimes into previous weeks and current week
-            const previousWeeksWorkTimes = workTimes.filter(w => getWeekFromDate(w.date) < currentWeekStr);
-            const currentWeekWorkTimes = workTimes.filter(w => getWeekFromDate(w.date) === currentWeekStr);
-
-            // Calculate flexi from previous weeks and add to base
-            let flexiFromPreviousWeeks = 0;
-            previousWeeksWorkTimes.forEach(w => {
-                const diff = w.duration < 0 ? w.duration : w.duration - 8;
-                flexiFromPreviousWeeks += diff;
-                console.log(`Previous week - ${w.date}: diff=${diff}`);
+            // Only add to flexiBase work times from the actual current week (today's week)
+            let flexiChange = 0;
+            workTimes.forEach(w => {
+                const workWeekStr = getWeekFromDate(w.date);
+                if (workWeekStr === actualCurrentWeekStr && w.duration !== 0 && !w.isOT) {
+                    const diff = w.duration < 0 ? w.duration : w.duration - 8;
+                    flexiChange += diff;
+                    console.log(`Current week - ${w.date}: diff=${diff}`);
+                }
             });
 
-            flexiBase += flexiFromPreviousWeeks;
-            saveFlexiBase();
+            if (flexiChange !== 0) {
+                flexiBase += flexiChange;
+                saveFlexiBase();
+                console.log("flexiChange:", flexiChange);
+                console.log("flexiBase after save:", flexiBase);
+            }
 
-            console.log("flexiFromPreviousWeeks:", flexiFromPreviousWeeks);
-            console.log("flexiBase after save:", flexiBase);
-
-            // Delete ALL workTimes (both previous and current week)
+            // Delete ALL workTimes
             workTimes = [];
             saveData();
             renderWorkTimeByDay();
