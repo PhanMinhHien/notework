@@ -1218,6 +1218,17 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
         let totalFlexiHours = parseFloat(localStorage.getItem("totalFlexiHours") || "159.75");
         let flexiDeduction = parseFloat(localStorage.getItem("flexiDeduction") || "0");
 
+        function convertHoursToFormat(hours) {
+            const isNegative = hours < 0;
+            const absHours = Math.abs(hours);
+            const wholeHours = Math.floor(absHours);
+            const minutes = Math.round((absHours - wholeHours) * 60);
+            const paddedHours = String(wholeHours).padStart(2, '0');
+            const paddedMinutes = String(minutes).padStart(2, '0');
+            const result = `${paddedHours}:${paddedMinutes}`;
+            return isNegative ? `-${result}` : result;
+        }
+
         function saveFlexiBase() {
             localStorage.setItem("flexiBase", flexiBase.toString());
             localStorage.setItem("totalFlexiHours", totalFlexiHours.toString());
@@ -1227,7 +1238,7 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
             let flexiChange = 0;
 
             workTimes.forEach(w => {
-                if (w.duration !== 0) {
+                if (w.duration !== 0 && !w.isOT) {
                     let diff;
                     if (w.duration < 0) {
                         // Negative duration = leave hours, use directly
@@ -1247,12 +1258,12 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
             // Debug log
             console.log(`Flexi: Base=${flexiBase}, Change=${flexiChange}, Total=${totalFlexiHours}`);
 
-            document.getElementById("flexiValue").innerText = totalFlexiHours.toFixed(2) + "h";
+            document.getElementById("flexiValue").innerText = convertHoursToFormat(totalFlexiHours);
         }
 
         function editFlexiBase() {
             const currentValue = flexiBase;
-            const newValue = prompt(`Current Flexi Base: ${currentValue}h\n\nEnter new Flexi Base value:`, currentValue);
+            const newValue = prompt(`Current Flexi Base: ${convertHoursToFormat(currentValue)}\n\nEnter new Flexi Base value:`, currentValue);
 
             if (newValue === null) return; // User cancelled
 
@@ -1265,7 +1276,7 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
             flexiBase = parsedValue;
             localStorage.setItem("flexiBase", flexiBase.toString());
             calculateFlexi();
-            alert(`Flexi Base updated to ${flexiBase}h`);
+            alert(`Flexi Base updated to ${convertHoursToFormat(flexiBase)}`);
         }
 
         function toggleTimeInputMode() {
@@ -2341,6 +2352,7 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
                 timeOut: mode === "timerange" ? document.getElementById("timeOut").value : "",
                 lunchBreak: lunchBreak,
                 duration,
+                isOT: false,
             });
 
             saveData();
@@ -2383,6 +2395,7 @@ const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
 <th>Time Out</th>
 <th>Lunch Break (hours)</th>
 <th>Work Duration (hours)</th>
+<th>OT</th>
 <th>Flexi (hours)</th>
 <th>Actions</th>
 </tr>
@@ -2403,7 +2416,10 @@ ${grouped[i]
     ${w.lunchBreak || "01:00"}
 </td>
 <td>${decimalHoursToHM(w.duration)}</td>
-<td>${flexiDay.toFixed(2)}</td> <!-- ✨ cột flexi -->
+<td style="text-align: center;">
+    <input type="checkbox" ${w.isOT ? 'checked' : ''} onchange="toggleOT(${i}, ${idx}, this.checked)" style="cursor: pointer; width: 18px; height: 18px;">
+</td>
+<td>${convertHoursToFormat(flexiDay)}</td> <!-- ✨ cột flexi -->
 <td>
 ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : ""}
 <button class="btn delete-btn" style="background:#e74c3c;color:#fff;" onclick="deleteWorkTimeByDay(${i}, ${idx})">Delete</button>
@@ -2492,6 +2508,22 @@ ${missingTime ? `<button onclick="editWorkTime(${i}, ${idx})">Edit</button>` : "
                 }
             }
         }
+
+        function toggleOT(dayOfWeek, idx, isOT) {
+            let count = -1;
+            for (let i = 0; i < workTimes.length; i++) {
+                if (workTimes[i].dayOfWeek === dayOfWeek) {
+                    count++;
+                    if (count === idx) {
+                        workTimes[i].isOT = isOT;
+                        saveData();
+                        calculateFlexi();
+                        break;
+                    }
+                }
+            }
+        }
+
         function deleteWorkTimeByDay(dayOfWeek, idx) {
             let count = -1;
             for (let i = 0; i < workTimes.length; i++) {
